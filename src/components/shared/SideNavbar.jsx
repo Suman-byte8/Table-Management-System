@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { FaHome, FaChair, FaCalendarAlt, FaCog } from "react-icons/fa";
 import gsap from "gsap";
 import { Link } from "react-router-dom";
+import logo from "/logo.png";
 
 const SideNavbar = () => {
   const labelRefs = useRef([]);
@@ -26,7 +27,9 @@ const SideNavbar = () => {
   return (
     <div className="fixed top-0 left-0 h-screen w-12 rounded-r-xl bg-gray-100  text-black flex flex-col items-center py-6 px-6 space-y-6 shadow-lg z-50">
       {/* Logo / top icon */}
-      <div className="text-2xl font-bold text-blue-400">🍽️</div>
+      <div className="text-2xl font-bold text-blue-400 h-auto w-8">
+        <img src={logo} alt="" className="h-full w-full" />
+      </div>
 
       {/* Nav icons */}
     <nav className="flex flex-col gap-8 mt-8">
