@@ -37,11 +37,12 @@ export const tableApi = {
     return response.data;
   },
 
-  // Get table by ID
-  getById: async (id) => {
-    const response = await api.get(`/tables/${id}`);
-    return response.data;
-  },
+// Get table by ID
+getById: async (id) => {
+  console.log("🔍 Fetching table with ID:", id); // ← Add for debugging
+  const response = await api.get(`/tables/${id}`);
+  return response.data;
+},
 
   // Update table
   update: async (id, tableData) => {

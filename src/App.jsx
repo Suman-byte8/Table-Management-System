@@ -26,7 +26,7 @@ const App = () => {
           <Route path="/settings" element={<Settings />} />
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/reservations/:id" element={<ReservationDetails />} />
-          <Route path="/table-management/:tableId" element={<TableDetails />} />
+          <Route path="/table-details/:id" element={<TableDetails />} />
           <Route path="/admin-profile" element={<AdminProfile />} />
         </Routes>
         <ToastContainer

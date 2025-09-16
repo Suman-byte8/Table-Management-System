@@ -4,20 +4,38 @@ import { Link } from "react-router-dom";
 const TableCard = ({ table }) => {
   // Status → Color mapping
   const statusColors = {
-    free: "bg-green-100 text-green-800 border-l-4 border-green-500",
+    available: "bg-green-100 text-green-800 border-l-4 border-green-500",
     reserved: "bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500",
     occupied: "bg-red-100 text-red-800 border-l-4 border-red-500",
+    dirty: "bg-gray-100 text-gray-800 border-l-4 border-gray-500",
+    maintenance: "bg-blue-100 text-blue-800 border-l-4 border-blue-500",
   };
 
-  const cardClass = statusColors[table.status] || statusColors.free;
+  // Get status color or default to available
+  const cardClass = statusColors[table.status] || statusColors.available;
+
+  // Format status for display
+  const displayStatus = table.status 
+    ? table.status.charAt(0).toUpperCase() + table.status.slice(1)
+    : 'Available';
+
+  // ✅ USE _id FOR ROUTING (MongoDB ObjectId)
+  const tableId = table._id || table.id;
+
+  if (!tableId) {
+    console.warn("⚠️ Table has no ID:", table);
+    return null; // or show error state
+  }
 
   return (
     <div className={`bg-white rounded-lg shadow-md p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-lg ${cardClass}`}>
       <div>
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-bold text-lg text-gray-900">Table {table.id}</h3>
+          <h3 className="font-bold text-lg text-gray-900">
+            {table.tableNumber || `Table ${tableId}`}
+          </h3>
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${cardClass.split(' ')[0]}`}>
-            {table.status.charAt(0).toUpperCase() + table.status.slice(1)}
+            {displayStatus}
           </span>
         </div>
         <p className="text-gray-600 flex items-center mt-1">
@@ -26,10 +44,20 @@ const TableCard = ({ table }) => {
           </svg>
           Capacity: {table.capacity}
         </p>
+        {table.section && (
+          <p className="text-gray-500 text-sm mt-1 capitalize">
+            {table.section} Section
+          </p>
+        )}
+        {table.locationDescription && (
+          <p className="text-gray-500 text-sm mt-1">
+            {table.locationDescription}
+          </p>
+        )}
       </div>
-      <Link to={`/table-management/${table.id}`} className="w-full">
+      <Link to={`/table-details/${tableId}`} className="w-full">
         <button className="w-full mt-4 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
-          Actions
+          View Details
         </button>
       </Link>
     </div>
