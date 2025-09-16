@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const TableCard = ({ table }) => {
   // Status → Color mapping
@@ -26,9 +27,11 @@ const TableCard = ({ table }) => {
           Capacity: {table.capacity}
         </p>
       </div>
-      <button className="w-full mt-4 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
-        Actions
-      </button>
+      <Link to={`/table-management/${table.id}`} className="w-full">
+        <button className="w-full mt-4 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
+          Actions
+        </button>
+      </Link>
     </div>
   );
 };

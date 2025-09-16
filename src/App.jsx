@@ -21,7 +21,7 @@ const App = () => {
           <Route path="/table-management" element={<TableManagement />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/reservations" element={<Reservations />} />
-          <Route path="/table/:tableId" element={<TableDetails />} />
+          <Route path="/table-management/:tableId" element={<TableDetails />} />
         </Routes>
       </div>
     </>
