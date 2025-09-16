@@ -11,6 +11,7 @@ import TableDetails from "./pages/TableDetails";
 import ReservationDetails from "./components/Reservations/ReservationDetails";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import AdminProfile from "./pages/Authentication/AdminProfile";
 
 const App = () => {
   return (
@@ -26,6 +27,7 @@ const App = () => {
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/reservations/:id" element={<ReservationDetails />} />
           <Route path="/table-management/:tableId" element={<TableDetails />} />
+          <Route path="/admin-profile" element={<AdminProfile />} />
         </Routes>
         <ToastContainer
           position="top-right"
