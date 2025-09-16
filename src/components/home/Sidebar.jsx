@@ -1,5 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { FaPlus, FaListUl, FaDownload } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import NewReservationModal from "../Reservations/NewReservationModal";
+import { reservationApi } from "../../api/reservations";
+import { exportToExcel } from "../../utils/exportUtils";
 
 const Sidebar = () => {
   // ✅ Filter Config — Define all filters as objects
@@ -59,7 +63,49 @@ const Sidebar = () => {
     },
   ];
 
-  // ✅ Quick Actions Config
+  // State for filters
+  const [filterValues, setFilterValues] = useState({
+    section: "",
+    status: "",
+    partySize: "",
+    timeSlot: "",
+    staff: "",
+  });
+
+  // State for modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const navigate = useNavigate();
+
+  // Handle filter change
+  const handleFilterChange = (key, value) => {
+    setFilterValues((prev) => ({ ...prev, [key]: value }));
+    // TODO: Implement filter logic or emit event to parent
+  };
+
+  // Handle quick actions
+  const handleQuickAction = (label) => {
+    if (label === "Add Walk-in") {
+      setIsModalOpen(true);
+    } else if (label === "Open Waitlist") {
+      navigate("/reservations");
+    } else if (label === "Export CSV") {
+      exportReservations();
+    }
+  };
+
+  // Export reservations to Excel
+  const exportReservations = async () => {
+    try {
+      const rawData = await reservationApi.getAll();
+      const reservations = Array.isArray(rawData) ? rawData : rawData?.data || [];
+      exportToExcel(reservations, "reservations_export.xlsx");
+    } catch (error) {
+      console.error("Failed to export reservations:", error);
+      alert("Failed to export reservations");
+    }
+  };
+
   const quickActions = [
     {
       label: "Add Walk-in",
@@ -107,7 +153,8 @@ const Sidebar = () => {
             </label>
             <select
               className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-100"
-              defaultValue=""
+              value={filterValues[filter.key]}
+              onChange={(e) => handleFilterChange(filter.key, e.target.value)}
             >
               {filter.options.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -125,6 +172,7 @@ const Sidebar = () => {
         {quickActions.map((action, idx) => (
           <button
             key={idx}
+            onClick={() => handleQuickAction(action.label)}
             className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${action.bg} ${action.border} ${action.text} ${action.hoverBg}`}
           >
             {action.icon} {action.label}
@@ -134,6 +182,17 @@ const Sidebar = () => {
 
       {/* Footer */}
       <div className="mt-auto pt-6 text-xs text-gray-400">Last synced: Just now</div>
+
+      {/* New Reservation Modal */}
+      <NewReservationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={(data) => {
+          // TODO: Implement save logic or emit event to parent
+          console.log("New reservation data:", data);
+          setIsModalOpen(false);
+        }}
+      />
     </aside>
   );
 };
