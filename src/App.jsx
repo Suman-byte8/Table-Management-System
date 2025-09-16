@@ -7,6 +7,7 @@ import TableManagement from "./pages/TableManagement";
 import Settings from "./pages/Settings";
 import Reservations from "./pages/Reservations";
 import HeaderBar from "./components/shared/HeaderBar";
+import TableDetails from "./pages/TableDetails";
 
 const App = () => {
   return (
@@ -20,6 +21,7 @@ const App = () => {
           <Route path="/table-management" element={<TableManagement />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/reservations" element={<Reservations />} />
+          <Route path="/table/:tableId" element={<TableDetails />} />
         </Routes>
       </div>
     </>

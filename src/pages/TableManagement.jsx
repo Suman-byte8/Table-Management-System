@@ -1,5 +1,5 @@
 import React from "react";
-import TableGrid from "../components/Table Management/TableGrid";
+import TableGrid from "../components/TableManagement/TableGrid";
 
 // Sample table data
 const tables = [
