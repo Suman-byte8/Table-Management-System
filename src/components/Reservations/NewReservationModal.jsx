@@ -91,8 +91,6 @@ const NewReservationModal = ({ isOpen, onClose, onSave }) => {
               >
                 <option value="restaurant">Restaurant</option>
                 <option value="bar">Bar</option>
-                <option value="outdoor">Outdoor</option>
-                <option value="private">Private Room</option>
               </select>
             </div>
             <div>

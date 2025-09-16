@@ -1,85 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReservationCard from "./ReservationQueue/ReservationCard";
 import AssignTableModal from "./ReservationQueue/AssignTableModal";
 import StatsGrid from "./ReservationQueue/StatsGrid";
 import { Link } from "react-router-dom";
+import { reservationApi } from "../../api/reservations";
 
 const ReservationQueue = () => {
-  // Mock Reservations Data
-  const [reservations] = useState([
-    {
-      id: 1,
-      guestName: "Sophia Carter",
-      partySize: 4,
-      time: "7:00 PM",
-      status: "confirmed",
-      preferences: "Window seat",
-      notes: "Birthday celebration",
-    },
-    {
-      id: 2,
-      guestName: "Ethan Bennett",
-      partySize: 2,
-      time: "7:30 PM",
-      status: "confirmed",
-      preferences: "Bar area",
-      notes: "",
-    },
-    {
-      id: 3,
-      guestName: "Olivia Taylor",
-      partySize: 6,
-      time: "8:00 PM",
-      status: "confirmed",
-      preferences: "Private booth",
-      notes: "Anniversary dinner",
-    },
-    {
-      id: 4,
-      guestName: "Liam Johnson",
-      partySize: 3,
-      time: "6:45 PM",
-      status: "confirmed",
-      preferences: "",
-      notes: "High chair needed",
-    },
-    {
-      id: 5,
-      guestName: "Emma Davis",
-      partySize: 4,
-      time: "7:15 PM",
-      status: "confirmed",
-      preferences: "Near fireplace",
-      notes: "",
-    },
-    {
-      id: 6,
-      guestName: "Noah Wilson",
-      partySize: 2,
-      time: "8:30 PM",
-      status: "confirmed",
-      preferences: "",
-      notes: "Vegetarian menu",
-    },
-    {
-      id: 7,
-      guestName: "Ava Martinez",
-      partySize: 5,
-      time: "6:30 PM",
-      status: "confirmed",
-      preferences: "Outdoor patio",
-      notes: "Allergy: nuts",
-    },
-    {
-      id: 8,
-      guestName: "Lucas Garcia",
-      partySize: 4,
-      time: "9:00 PM",
-      status: "confirmed",
-      preferences: "",
-      notes: "",
-    },
-  ]);
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchPendingReservations = async () => {
+      try {
+        setLoading(true);
+        const rawData = await reservationApi.getAll();
+        const pendingReservations = (Array.isArray(rawData) ? rawData : rawData?.data || [])
+          .filter(res => res.status === 'pending')
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .slice(0, 5)
+          .map(res => ({
+            id: res._id,
+            guestName: res.guestInfo?.name || 'Unknown',
+            partySize: res.noOfDiners || 0,
+            time: res.timeSlot || 'N/A',
+            status: res.status || 'pending',
+            preferences: res.specialRequests || '',
+            notes: res.additionalDetails || '',
+          }));
+        setReservations(pendingReservations);
+      } catch (err) {
+        setError('Failed to load reservations');
+        console.error('Error fetching reservations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPendingReservations();
+  }, []);
 
   // Modal State
   const [selectedReservation, setSelectedReservation] = useState(null);
@@ -128,15 +86,32 @@ const ReservationQueue = () => {
 <Link to="/reservations" className="pb-2 px-6 text-gray-500 hover:text-gray-700 hover:underline w-fit">View All Reservations</Link>
       {/* Scrollable Reservation List */}
       <div className="flex-1 overflow-y-auto px-6 pb-6">
-        <div className="space-y-4">
-          {reservations.map((reservation) => (
-            <ReservationCard
-              key={reservation.id}
-              reservation={reservation}
-              onAssignClick={() => openModal(reservation)}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+              <p className="mt-2 text-sm text-gray-500">Loading reservations...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-red-500">{error}</p>
+          </div>
+        ) : reservations.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-gray-500">No pending reservations</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reservations.map((reservation) => (
+              <ReservationCard
+                key={reservation.id}
+                reservation={reservation}
+                onAssignClick={() => openModal(reservation)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Modal (outside scroll container) */}

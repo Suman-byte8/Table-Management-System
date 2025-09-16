@@ -57,7 +57,7 @@ export const reservationApi = {
 
   // Create new reservation
   create: async (reservationData) => {
-    const response = await api.post("/reservations", reservationData);
+    const response = await api.post("/reservations/restaurant", reservationData);
     return response.data;
   },
 
@@ -69,7 +69,7 @@ export const reservationApi = {
 
   // Delete reservation
   delete: async (id) => {
-    const response = await api.delete(`/reservations/${id}`);
+    const response = await api.delete(`/reservations/restaurant/${id}`);
     return response.data;
   },
 

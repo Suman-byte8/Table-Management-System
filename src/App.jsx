@@ -9,6 +9,8 @@ import Reservations from "./pages/Reservations";
 import HeaderBar from "./components/shared/HeaderBar";
 import TableDetails from "./pages/TableDetails";
 import ReservationDetails from "./components/Reservations/ReservationDetails";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const App = () => {
   return (
@@ -25,6 +27,18 @@ const App = () => {
           <Route path="/reservations/:id" element={<ReservationDetails />} />
           <Route path="/table-management/:tableId" element={<TableDetails />} />
         </Routes>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </div>
     </>
   );

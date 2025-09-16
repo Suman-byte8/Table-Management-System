@@ -4,6 +4,7 @@ import ReservationTable from "../components/Reservations/ReservationTable";
 import Pagination from "../components/Reservations/Pagination";
 import NewReservationModal from "../components/Reservations/NewReservationModal";
 import { reservationApi } from "../api/reservations";
+import { toast } from "react-toastify";
 
 const Reservations = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,7 +92,7 @@ const Reservations = () => {
         name: res.guestInfo?.name || 'Unknown',
         size: res.noOfDiners || 0,
         time: res.timeSlot || 'N/A',
-        area: res.typeOfReservation 
+        area: res.typeOfReservation
           ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
           : 'N/A',
         notes: res.specialRequests || res.additionalDetails || '-',
@@ -99,10 +100,35 @@ const Reservations = () => {
         original: res
       }));
       setReservations(transformedData);
-      alert("Reservation created successfully!");
+      toast.success("Reservation created successfully!");
     } catch (err) {
       console.error("Error creating reservation:", err);
-      alert("Failed to create reservation");
+      toast.error("Failed to create reservation");
+    }
+  };
+
+  const handleDeleteReservation = async (id) => {
+    try {
+      await reservationApi.delete(id);
+      // Refresh the reservations list
+      const rawData = await reservationApi.getAll();
+      const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
+        id: res._id,
+        name: res.guestInfo?.name || 'Unknown',
+        size: res.noOfDiners || 0,
+        time: res.timeSlot || 'N/A',
+        area: res.typeOfReservation
+          ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
+          : 'N/A',
+        notes: res.specialRequests || res.additionalDetails || '-',
+        status: res.status || 'pending',
+        original: res
+      }));
+      setReservations(transformedData);
+      toast.success("Reservation deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting reservation:", err);
+      toast.error("Failed to delete reservation");
     }
   };
 
@@ -161,7 +187,7 @@ const Reservations = () => {
             />
 
             {/* Table */}
-            <ReservationTable reservations={paginatedReservations} />
+            <ReservationTable reservations={paginatedReservations} onDelete={handleDeleteReservation} />
 
             {/* Pagination */}
             <Pagination
