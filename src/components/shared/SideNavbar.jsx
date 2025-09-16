@@ -9,7 +9,7 @@ const SideNavbar = () => {
 
   const items = [
     { name: "Home", icon: FaHome, path: "/" },
-    { name: "Tables", icon: FaChair, path: "/floor-plan-view" },
+    { name: "Tables", icon: FaChair, path: "/table-management" },
     { name: "Reservations", icon: FaCalendarAlt, path: "/reservations" },
     { name: "Settings", icon: FaCog, path: "/settings" },
     { name: "Logout", icon: null }

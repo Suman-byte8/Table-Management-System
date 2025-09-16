@@ -11,10 +11,11 @@ import {
   FaSearchPlus,
   FaExpand,
 } from "react-icons/fa";
-import FloorPlan from "../../components/home/FloorPlan";
-import Sidebar from "../../components/home/Sidebar";
-import Header from "../../components/home/Header";
-import ReservationQueue from "../../components/home/ReservationQueue";
+
+import FloorPlan from "../components/home/FloorPlan";
+import Sidebar from "../components/home/Sidebar";
+import ReservationQueue from "../components/home/ReservationQueue";
+
 
 const Home = () => {
   return (
@@ -25,7 +26,7 @@ const Home = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
         {/* Header */}
-        <Header />
+        {/* <Header /> */}
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Reservation Queue */}
