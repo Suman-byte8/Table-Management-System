@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ReservationFilters from "../components/Reservations/ReservationFilters";
 import ReservationTable from "../components/Reservations/ReservationTable";
 import Pagination from "../components/Reservations/Pagination";
 import NewReservationModal from "../components/Reservations/NewReservationModal";
-
+import { reservationApi } from "../api/reservations";
 
 const Reservations = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,80 +17,51 @@ const Reservations = () => {
   // ✅ Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Mock data (unchanged)
-  const reservations = [
-    {
-      id: 1,
-      name: "Ava Harper",
-      size: 4,
-      time: "7:00 PM",
-      area: "Main Dining / T12",
-      notes: "-",
-      status: "confirmed",
-    },
-    {
-      id: 2,
-      name: "Liam Carter",
-      size: 2,
-      time: "7:30 PM",
-      area: "Bar Area / T2",
-      notes: "Vegetarian",
-      status: "arrived",
-    },
-    {
-      id: 3,
-      name: "Olivia Bennett",
-      size: 6,
-      time: "8:00 PM",
-      area: "Private Room",
-      notes: "Birthday",
-      status: "pending",
-    },
-    {
-      id: 4,
-      name: "Noah Foster",
-      size: 3,
-      time: "8:15 PM",
-      area: "Main Dining / T15",
-      notes: "-",
-      status: "confirmed",
-    },
-    {
-      id: 5,
-      name: "Isabella Hayes",
-      size: 2,
-      time: "8:30 PM",
-      area: "Bar Area / T5",
-      notes: "Gluten-Free",
-      status: "cancelled",
-    },
-    {
-      id: 6,
-      name: "Ethan Parker",
-      size: 5,
-      time: "9:00 PM",
-      area: "Main Dining / T20",
-      notes: "Anniversary",
-      status: "confirmed",
-    },
-    {
-      id: 7,
-      name: "Sophia Reed",
-      size: 4,
-      time: "9:15 PM",
-      area: "Bar Area / T8",
-      notes: "-",
-      status: "no-show",
-    },
-  ];
+  // API data
+  const [reservations, setReservations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Filter logic (unchanged)
-  const filteredReservations = reservations.filter((res) => {
+  // Fetch reservations on mount
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        setLoading(true);
+        const rawData = await reservationApi.getAll();
+        const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
+          id: res._id,
+          name: res.guestInfo?.name || 'Unknown',
+          size: res.noOfDiners || 0,
+          time: res.timeSlot || 'N/A',
+          area: res.typeOfReservation 
+            ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
+            : 'N/A',
+          notes: res.specialRequests || res.additionalDetails || '-',
+          status: res.status || 'pending',
+          original: res
+        }));
+        setReservations(transformedData);
+        console.log("Transformed reservations:", transformedData);
+      } catch (err) {
+        setError('Failed to load reservations');
+        console.error('Error fetching reservations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReservations();
+  }, []);
+
+  // Filter logic
+  const filteredReservations = (reservations || []).filter((res) => {
     const matchesSearch =
-      res.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      res.area.toLowerCase().includes(searchTerm.toLowerCase());
+      res.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      res.area?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      res.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = filters.status ? res.status === filters.status : true;
-    const matchesArea = filters.area ? res.area.includes(filters.area) : true;
+    const matchesArea = filters.area ? res.area?.includes(filters.area) : true;
+    
     return matchesSearch && matchesStatus && matchesArea;
   });
 
@@ -110,11 +81,52 @@ const Reservations = () => {
   };
 
   // ✅ Modal Handlers
-  const handleSaveReservation = (data) => {
-    console.log("New reservation created:", data);
-    // In real app: POST to API, then refresh list
-    alert("Reservation created successfully!");
+  const handleSaveReservation = async (data) => {
+    try {
+      await reservationApi.create(data);
+      // Refresh the reservations list
+      const rawData = await reservationApi.getAll();
+      const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
+        id: res._id,
+        name: res.guestInfo?.name || 'Unknown',
+        size: res.noOfDiners || 0,
+        time: res.timeSlot || 'N/A',
+        area: res.typeOfReservation 
+          ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
+          : 'N/A',
+        notes: res.specialRequests || res.additionalDetails || '-',
+        status: res.status || 'pending',
+        original: res
+      }));
+      setReservations(transformedData);
+      alert("Reservation created successfully!");
+    } catch (err) {
+      console.error("Error creating reservation:", err);
+      alert("Failed to create reservation");
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading reservations...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
+          <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -130,7 +142,7 @@ const Reservations = () => {
                 All Reservations
               </h1>
               <button
-                onClick={() => setIsModalOpen(true)} // ← OPEN MODAL
+                onClick={() => setIsModalOpen(true)}
                 className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-10 px-4 bg-emerald-600 text-white text-base font-bold leading-normal transition-colors duration-200 hover:bg-emerald-700"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

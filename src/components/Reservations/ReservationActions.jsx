@@ -1,8 +1,14 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 
 const ReservationActions = ({ reservationId }) => {
-  const handleView = () => console.log("View reservation", reservationId);
+  const navigate = useNavigate();
+
+  const handleView = () => {
+    navigate(`/reservations/${reservationId}`);
+  };
+
   const handleEdit = () => console.log("Edit reservation", reservationId);
   const handleDelete = () => console.log("Delete reservation", reservationId);
 

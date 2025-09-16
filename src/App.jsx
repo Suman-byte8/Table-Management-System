@@ -8,6 +8,7 @@ import Settings from "./pages/Settings";
 import Reservations from "./pages/Reservations";
 import HeaderBar from "./components/shared/HeaderBar";
 import TableDetails from "./pages/TableDetails";
+import ReservationDetails from "./components/Reservations/ReservationDetails";
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
           <Route path="/table-management" element={<TableManagement />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/reservations" element={<Reservations />} />
+          <Route path="/reservations/:id" element={<ReservationDetails />} />
           <Route path="/table-management/:tableId" element={<TableDetails />} />
         </Routes>
       </div>
