@@ -3,7 +3,7 @@ import ReservationFilters from "../components/Reservations/ReservationFilters";
 import ReservationTable from "../components/Reservations/ReservationTable";
 import Pagination from "../components/Reservations/Pagination";
 import NewReservationModal from "../components/Reservations/NewReservationModal";
-import { reservationApi } from "../api/reservations";
+import { reservationApi } from "../api/reservationsApi";
 import { toast } from "react-toastify";
 
 const Reservations = () => {

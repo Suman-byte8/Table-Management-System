@@ -46,7 +46,10 @@ getById: async (id) => {
 
   // Update table
   update: async (id, tableData) => {
-    const response = await api.put(`/tables/${id}`, tableData);
+    console.log(`API: Updating table ${id} with data:`, tableData); // Debug log
+    // Make sure to call the correct endpoint
+    const response = await api.put(`/tables/${id}`, tableData); // Or `/api/tables/${id}` depending on your base URL
+    console.log("API: Table update response:", response.data); // Debug log
     return response.data;
   },
 

@@ -1,5 +1,6 @@
+// src/components/FloorPlan.jsx (or your FloorPlan component path)
 import React, { useState, useEffect } from "react";
-import { tableApi } from "../../api/tableApi";
+import { tableApi } from "../../api/tableApi"; // Adjust path if needed
 
 // status → color mapping
 const statusColors = {
@@ -19,32 +20,42 @@ const statusBadgeColors = {
   maintenance: "bg-blue-100 text-blue-700",
 };
 
-const FloorPlan = () => {
+// Props now include filters
+const FloorPlan = ({ filters }) => { // Accept filters as a prop
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch only available tables from API
   useEffect(() => {
     const fetchAvailableTables = async () => {
       try {
         setLoading(true);
-        // Filter for available tables only
-        const response = await tableApi.getAll({
-          status: 'available'
-        });
-        
-        // Transform API data to match your UI component structure
+        setError(null);
+
+        // Prepare API query parameters based on filters
+        // Floor Plan specifically shows 'available' tables
+        const queryParams = { status: 'available' };
+
+        // Apply section filter if set
+        if (filters?.section) {
+            queryParams.section = filters.section;
+        }
+        // Note: partySize and timeSlot don't typically apply to table status directly.
+        // You might filter based on reservations for those if needed.
+
+        const response = await tableApi.getAll(queryParams);
+
+        // Transform API data
         const transformedTables = (response.data || []).map(table => ({
           id: table.tableNumber || table._id,
           seats: table.capacity,
-          status: table.status, // should be 'available'
+          status: table.status,
           _id: table._id,
           section: table.section,
           locationDescription: table.locationDescription,
         }));
-        
-        // ✅ Take only first 6 tables
+
+        // ✅ Take only first 6 tables for the home page view
         const firstSixTables = transformedTables.slice(0, 6);
         setTables(firstSixTables);
       } catch (error) {
@@ -55,8 +66,9 @@ const FloorPlan = () => {
       }
     };
 
+    // Fetch tables whenever filters change
     fetchAvailableTables();
-  }, []);
+  }, [filters]); // Re-run effect when filters change
 
   if (loading) {
     return (
@@ -85,7 +97,7 @@ const FloorPlan = () => {
   }
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-md fixed">
+    <div className="p-6 bg-white rounded-xl shadow-md">
       <h2 className="text-xl font-bold mb-4">Available Tables</h2>
       {tables.length === 0 ? (
         <div className="text-center py-12">
@@ -104,23 +116,16 @@ const FloorPlan = () => {
               key={table._id || table.id}
               className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 shadow hover:shadow-lg transition cursor-pointer hover:bg-gray-50"
             >
-              {/* table circle */}
               <div
-                className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-lg font-semibold ${
-                  statusColors[table.status] || statusColors.available
-                }`}
+                className={`w-20 h-20 rounded-full flex items-center justify-center text-white text-lg font-semibold ${statusColors[table.status] || statusColors.available}`}
               >
                 {table.id}
               </div>
-              {/* seats info */}
               <p className="mt-3 text-gray-700 text-sm">
                 {table.seats} seats
               </p>
-              {/* status badge */}
               <span
-                className={`mt-2 px-3 py-1 rounded-full text-xs font-medium capitalize ${
-                  statusBadgeColors[table.status] || statusBadgeColors.available
-                }`}
+                className={`mt-2 px-3 py-1 rounded-full text-xs font-medium capitalize ${statusBadgeColors[table.status] || statusBadgeColors.available}`}
               >
                 {table.status}
               </span>
@@ -128,6 +133,15 @@ const FloorPlan = () => {
           ))}
         </div>
       )}
+
+      <div className="mt-6 text-center">
+        <a
+          href="/table-management"
+          className="inline-block bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          View All Tables
+        </a>
+      </div>
     </div>
   );
 };

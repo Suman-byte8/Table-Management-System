@@ -63,7 +63,9 @@ export const reservationApi = {
 
   // Update reservation
   update: async (id, reservationData) => {
+    console.log(`API: Updating reservation ${id} with data:`, reservationData);
     const response = await api.put(`/reservations/restaurant/${id}`, reservationData);
+    console.log("API: Reservation update response:", response.data);
     return response.data;
   },
 

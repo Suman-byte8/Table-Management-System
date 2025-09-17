@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { reservationApi } from "../../../api/reservations";
+import { reservationApi } from "../../../api/reservationsApi";
 import { tableApi } from "../../../api/tableApi";
 
 const StatsGrid = () => {

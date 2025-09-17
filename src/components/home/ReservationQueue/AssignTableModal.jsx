@@ -1,7 +1,11 @@
+// src/components/ReservationQueue/AssignTableModal.jsx
 import React from "react";
 import { FaTimes } from "react-icons/fa";
 
-const AssignTableModal = ({ reservation, availableTables, onAssign, onClose }) => {
+const AssignTableModal = ({ reservation, availableTables = [], onAssign, onClose }) => {
+  // Optional: Add a defensive check/filter if needed, though it should be pre-filtered
+  // const filteredTables = availableTables.filter(table => table.status === 'available');
+
   return (
     <div className="fixed inset-0 backdrop-blur-sm backdrop-brightness-50 bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-md w-full p-6 relative">
@@ -13,35 +17,57 @@ const AssignTableModal = ({ reservation, availableTables, onAssign, onClose }) =
         </button>
 
         <h3 className="text-lg font-bold mb-4">
-          Assign Table to {reservation.guestName}
+          Assign Table to {reservation?.guestName || "Guest"}
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Party of {reservation.partySize} • {reservation.time}
+          Party of {reservation?.partySize || "N/A"} • {reservation?.time || "N/A"}
         </p>
 
         {/* Available Tables */}
         <div className="space-y-3 max-h-60 overflow-y-auto">
-          {availableTables.length > 0 ? (
-            availableTables.map((table) => (
-              <div
-                key={table.id}
-                onClick={() => onAssign(table.id)}
-                className="p-3 border border-gray-200 rounded-md hover:bg-gray-50 cursor-pointer transition-colors flex justify-between items-center"
-              >
-                <div>
-                  <p className="font-semibold">{table.id}</p>
-                  <p className="text-sm text-gray-500">
-                    {table.capacity} seats • {table.section}
-                  </p>
+          {availableTables && availableTables.length > 0 ? (
+            availableTables.map((table) => {
+              const isReserved = table.status === 'reserved';
+              const isAvailable = table.status === 'available' && table._id;
+              return (
+                <div
+                  key={table.id} // Assuming table.id is unique and reliable
+                  onClick={() => {
+                    if (isAvailable) {
+                      onAssign(table.id); // Pass the id used for identification in the list
+                    }
+                  }}
+                  className={`p-3 border rounded-md transition-colors flex justify-between items-center ${
+                    isAvailable
+                      ? "border-gray-200 hover:bg-gray-50 cursor-pointer"
+                      : "border-gray-300 bg-gray-100 cursor-not-allowed"
+                  }`}
+                  title={isAvailable ? "Click to assign" : isReserved ? "Table is reserved" : "Table data incomplete"}
+                >
+                  <div>
+                    {/* Display tableNumber if available, otherwise fall back to id */}
+                    <p className="font-semibold">{table.tableNumber || table.id}</p>
+                    <p className="text-sm text-gray-500">
+                      {table.capacity} seats • {table.section}
+                    </p>
+                    {/* Optional: Show _id for debugging (remove in production) */}
+                    {/* <p className="text-xs text-gray-400">ID: {table._id}</p> */}
+                  </div>
+                  {isReserved ? (
+                    <span className="text-red-600 text-sm font-medium">Reserved</span>
+                  ) : isAvailable ? (
+                    <span className="text-green-600 text-sm font-medium">Assign</span>
+                  ) : (
+                    <span className="text-red-500 text-xs">Error</span>
+                  )}
                 </div>
-                <span className="text-green-600 text-sm font-medium">Assign</span>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-4 text-center bg-gray-50 rounded-md">
               <p className="text-gray-600">No suitable tables available right now.</p>
               <p className="text-sm text-gray-500 mt-1">
-                Try adjusting party size or check back later.
+                Try adjusting filters or check back later.
               </p>
             </div>
           )}
@@ -54,9 +80,15 @@ const AssignTableModal = ({ reservation, availableTables, onAssign, onClose }) =
           >
             Cancel
           </button>
-          {availableTables.length > 0 && (
+          {/* Show "Assign First Available" only if there are available tables */}
+          {availableTables && availableTables.length > 0 && availableTables.some(t => t.status === 'available' && t._id) && (
             <button
-              onClick={() => onAssign(availableTables[0].id)}
+              onClick={() => {
+                const firstAvailableTable = availableTables.find(t => t.status === 'available' && t._id);
+                if (firstAvailableTable) {
+                  onAssign(firstAvailableTable.id);
+                }
+              }}
               className="flex-1 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600"
             >
               Assign First Available

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
-import { reservationApi } from "../../api/reservations";
+import { reservationApi } from "../../api/reservationsApi";
 import { toast } from "react-toastify";
 
 const ReservationActions = ({ reservationId, onReservationUpdated }) => {

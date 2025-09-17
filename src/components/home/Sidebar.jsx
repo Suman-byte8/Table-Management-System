@@ -1,16 +1,17 @@
+// src/components/Sidebar.jsx (or your Sidebar component path)
 import React, { useState } from "react";
 import { FaPlus, FaListUl, FaDownload } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import NewReservationModal from "../Reservations/NewReservationModal";
-import { reservationApi } from "../../api/reservations";
-import { exportToExcel } from "../../utils/exportUtils";
+import NewReservationModal from "../Reservations/NewReservationModal"; // Adjust path if needed
+import { exportReservationsToExcel } from "../../utils/exportUtils"; // Adjust path if needed
+import { reservationApi } from "../../api/reservationsApi"; // Adjust path if needed
 
-const Sidebar = () => {
-  // ✅ Filter Config — Define all filters as objects
+const Sidebar = ({ onFilterChange }) => {
+  // ✅ Filter Config
   const filters = [
     {
       label: "Section",
-      key: "section",
+      key: "section", // Maps to 'typeOfReservation' in API data
       options: [
         { value: "", label: "All Sections" },
         { value: "restaurant", label: "Restaurant" },
@@ -22,9 +23,12 @@ const Sidebar = () => {
       key: "status",
       options: [
         { value: "", label: "All Statuses" },
-        { value: "available", label: "Available" },
-        { value: "reserved", label: "Reserved" },
-        { value: "occupied", label: "Occupied" },
+        { value: "pending", label: "Pending" },
+        { value: "confirmed", label: "Confirmed" },
+        { value: "seated", label: "Seated" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+        { value: "no-show", label: "No Show" },
       ],
     },
     {
@@ -32,7 +36,8 @@ const Sidebar = () => {
       key: "partySize",
       options: [
         { value: "", label: "Any Size" },
-        { value: "1-2", label: "1-2 Guests" },
+        { value: "1", label: "1 Guest" },
+        { value: "2", label: "2 Guests" },
         { value: "3-4", label: "3-4 Guests" },
         { value: "5-6", label: "5-6 Guests" },
         { value: "7+", label: "7+ Guests" },
@@ -43,22 +48,9 @@ const Sidebar = () => {
       key: "timeSlot",
       options: [
         { value: "", label: "All Times" },
-        { value: "breakfast", label: "Breakfast (8AM-11AM)" },
-        { value: "lunch", label: "Lunch (11AM-3PM)" },
-        { value: "dinner", label: "Dinner (5PM-10PM)" },
-        { value: "late", label: "Late Night (10PM-2AM)" },
-      ],
-    },
-    {
-      label: "Assigned Staff",
-      key: "staff",
-      options: [
-        { value: "", label: "All Staff" },
-        { value: "server-1", label: "Ethan Carter" },
-        { value: "server-2", label: "Olivia Bennett" },
-        { value: "server-3", label: "Noah Thompson" },
-        { value: "server-4", label: "Ava Harper" },
-        { value: "unassigned", label: "Unassigned" },
+        { value: "Breakfast", label: "Breakfast" },
+        { value: "Lunch", label: "Lunch" },
+        { value: "Dinner", label: "Dinner" },
       ],
     },
   ];
@@ -69,7 +61,6 @@ const Sidebar = () => {
     status: "",
     partySize: "",
     timeSlot: "",
-    staff: "",
   });
 
   // State for modal
@@ -77,32 +68,24 @@ const Sidebar = () => {
 
   const navigate = useNavigate();
 
-  // Handle filter change
+  // Handle filter change and notify parent
   const handleFilterChange = (key, value) => {
-    setFilterValues((prev) => ({ ...prev, [key]: value }));
-    // TODO: Implement filter logic or emit event to parent
+    const newFilters = { ...filterValues, [key]: value };
+    setFilterValues(newFilters);
+    // Notify parent component about filter change
+    if (onFilterChange) {
+      onFilterChange(newFilters);
+    }
   };
 
   // Handle quick actions
   const handleQuickAction = (label) => {
     if (label === "Add Walk-in") {
       setIsModalOpen(true);
-    } else if (label === "Open Waitlist") {
+    } else if (label === "Open Waitlist" || label === "Open Reservations") {
       navigate("/reservations");
-    } else if (label === "Export CSV") {
-      exportReservations();
-    }
-  };
-
-  // Export reservations to Excel
-  const exportReservations = async () => {
-    try {
-      const rawData = await reservationApi.getAll();
-      const reservations = Array.isArray(rawData) ? rawData : rawData?.data || [];
-      exportToExcel(reservations, "reservations_export.xlsx");
-    } catch (error) {
-      console.error("Failed to export reservations:", error);
-      alert("Failed to export reservations");
+    } else if (label === "Export Excel") {
+      exportReservationsToExcel(reservationApi.getAll);
     }
   };
 
@@ -117,7 +100,7 @@ const Sidebar = () => {
       bg: "bg-green-50",
     },
     {
-      label: "Open Waitlist",
+      label: "Open Reservations",
       icon: <FaListUl />,
       color: "blue",
       hoverBg: "hover:bg-blue-100",
@@ -126,7 +109,7 @@ const Sidebar = () => {
       bg: "bg-blue-50",
     },
     {
-      label: "Export CSV",
+      label: "Export Excel",
       icon: <FaDownload />,
       color: "gray",
       hoverBg: "hover:bg-gray-100",
@@ -174,6 +157,7 @@ const Sidebar = () => {
             key={idx}
             onClick={() => handleQuickAction(action.label)}
             className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${action.bg} ${action.border} ${action.text} ${action.hoverBg}`}
+            type="button"
           >
             {action.icon} {action.label}
           </button>
@@ -188,9 +172,9 @@ const Sidebar = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={(data) => {
-          // TODO: Implement save logic or emit event to parent
           console.log("New reservation data:", data);
           setIsModalOpen(false);
+          // TODO: Call API to save reservation, potentially refresh data elsewhere
         }}
       />
     </aside>
