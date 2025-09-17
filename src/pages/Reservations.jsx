@@ -23,33 +23,39 @@ const Reservations = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchReservations = async () => {
+    try {
+      setLoading(true);
+      const rawData = await reservationApi.getAll();
+      const transformedData = (
+        Array.isArray(rawData) ? rawData : rawData?.data || []
+      ).map((res) => ({
+        id: res._id,
+        name: res.guestInfo?.name || "Unknown",
+        size: res.noOfDiners || 0,
+        time: res.timeSlot || "N/A",
+        area: res.typeOfReservation
+          ? `${
+              res.typeOfReservation.charAt(0).toUpperCase() +
+              res.typeOfReservation.slice(1)
+            } Section`
+          : "N/A",
+        notes: res.specialRequests || res.additionalDetails || "-",
+        status: res.status || "pending",
+        original: res,
+      }));
+      setReservations(transformedData);
+      console.log("Transformed reservations:", transformedData);
+    } catch (err) {
+      setError("Failed to load reservations");
+      console.error("Error fetching reservations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch reservations on mount
   useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        setLoading(true);
-        const rawData = await reservationApi.getAll();
-        const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
-          id: res._id,
-          name: res.guestInfo?.name || 'Unknown',
-          size: res.noOfDiners || 0,
-          time: res.timeSlot || 'N/A',
-          area: res.typeOfReservation 
-            ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
-            : 'N/A',
-          notes: res.specialRequests || res.additionalDetails || '-',
-          status: res.status || 'pending',
-          original: res
-        }));
-        setReservations(transformedData);
-        console.log("Transformed reservations:", transformedData);
-      } catch (err) {
-        setError('Failed to load reservations');
-        console.error('Error fetching reservations:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchReservations();
   }, []);
 
@@ -59,17 +65,20 @@ const Reservations = () => {
       res.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       res.area?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       res.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = filters.status ? res.status === filters.status : true;
     const matchesArea = filters.area ? res.area?.includes(filters.area) : true;
-    
+
     return matchesSearch && matchesStatus && matchesArea;
   });
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedReservations = filteredReservations.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedReservations = filteredReservations.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -87,17 +96,22 @@ const Reservations = () => {
       await reservationApi.create(data);
       // Refresh the reservations list
       const rawData = await reservationApi.getAll();
-      const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
+      const transformedData = (
+        Array.isArray(rawData) ? rawData : rawData?.data || []
+      ).map((res) => ({
         id: res._id,
-        name: res.guestInfo?.name || 'Unknown',
+        name: res.guestInfo?.name || "Unknown",
         size: res.noOfDiners || 0,
-        time: res.timeSlot || 'N/A',
+        time: res.timeSlot || "N/A",
         area: res.typeOfReservation
-          ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
-          : 'N/A',
-        notes: res.specialRequests || res.additionalDetails || '-',
-        status: res.status || 'pending',
-        original: res
+          ? `${
+              res.typeOfReservation.charAt(0).toUpperCase() +
+              res.typeOfReservation.slice(1)
+            } Section`
+          : "N/A",
+        notes: res.specialRequests || res.additionalDetails || "-",
+        status: res.status || "pending",
+        original: res,
       }));
       setReservations(transformedData);
       toast.success("Reservation created successfully!");
@@ -112,17 +126,22 @@ const Reservations = () => {
       await reservationApi.delete(id);
       // Refresh the reservations list
       const rawData = await reservationApi.getAll();
-      const transformedData = (Array.isArray(rawData) ? rawData : rawData?.data || []).map(res => ({
+      const transformedData = (
+        Array.isArray(rawData) ? rawData : rawData?.data || []
+      ).map((res) => ({
         id: res._id,
-        name: res.guestInfo?.name || 'Unknown',
+        name: res.guestInfo?.name || "Unknown",
         size: res.noOfDiners || 0,
-        time: res.timeSlot || 'N/A',
+        time: res.timeSlot || "N/A",
         area: res.typeOfReservation
-          ? `${res.typeOfReservation.charAt(0).toUpperCase() + res.typeOfReservation.slice(1)} Section`
-          : 'N/A',
-        notes: res.specialRequests || res.additionalDetails || '-',
-        status: res.status || 'pending',
-        original: res
+          ? `${
+              res.typeOfReservation.charAt(0).toUpperCase() +
+              res.typeOfReservation.slice(1)
+            } Section`
+          : "N/A",
+        notes: res.specialRequests || res.additionalDetails || "-",
+        status: res.status || "pending",
+        original: res,
       }));
       setReservations(transformedData);
       toast.success("Reservation deleted successfully!");
@@ -171,8 +190,18 @@ const Reservations = () => {
                 onClick={() => setIsModalOpen(true)}
                 className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md h-10 px-4 bg-emerald-600 text-white text-base font-bold leading-normal transition-colors duration-200 hover:bg-emerald-700"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 <span className="truncate">New Reservation</span>
               </button>
@@ -187,7 +216,11 @@ const Reservations = () => {
             />
 
             {/* Table */}
-            <ReservationTable reservations={paginatedReservations} onDelete={handleDeleteReservation} />
+            <ReservationTable
+              reservations={paginatedReservations}
+              onDelete={handleDeleteReservation}
+              onReservationUpdated={fetchReservations}
+            />
 
             {/* Pagination */}
             <Pagination
@@ -196,7 +229,10 @@ const Reservations = () => {
               onPageChange={setCurrentPage}
               totalResults={filteredReservations.length}
               showingFrom={startIndex + 1}
-              showingTo={Math.min(startIndex + itemsPerPage, filteredReservations.length)}
+              showingTo={Math.min(
+                startIndex + itemsPerPage,
+                filteredReservations.length
+              )}
             />
           </div>
         </main>

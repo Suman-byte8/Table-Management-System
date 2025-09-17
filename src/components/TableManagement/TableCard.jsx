@@ -28,7 +28,7 @@ const TableCard = ({ table }) => {
   }
 
   return (
-    <div className={`bg-white rounded-lg shadow-md p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-lg ${cardClass}`}>
+    <div className={`bg-white rounded-lg shadow-md p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-lg hover:bg-gray-100 ${cardClass}`}>
       <div>
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold text-lg text-gray-900">

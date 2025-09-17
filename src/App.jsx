@@ -8,10 +8,11 @@ import Settings from "./pages/Settings";
 import Reservations from "./pages/Reservations";
 import HeaderBar from "./components/shared/HeaderBar";
 import TableDetails from "./pages/TableDetails";
-import ReservationDetails from "./components/Reservations/ReservationDetails";
+import ReservationDetails from "./pages/ReservationDetails";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import AdminProfile from "./pages/Authentication/AdminProfile";
+import ReservationEdit from "./components/Reservations/ReservationEdit";
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
           <Route path="/reservations/:id" element={<ReservationDetails />} />
           <Route path="/table-details/:id" element={<TableDetails />} />
           <Route path="/admin-profile" element={<AdminProfile />} />
+          <Route path="/reservations/:id/edit" element={<ReservationEdit />} />
         </Routes>
         <ToastContainer
           position="top-right"

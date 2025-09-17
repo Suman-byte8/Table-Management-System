@@ -63,7 +63,7 @@ export const reservationApi = {
 
   // Update reservation
   update: async (id, reservationData) => {
-    const response = await api.patch(`/reservations/${id}`, reservationData);
+    const response = await api.put(`/reservations/restaurant/${id}`, reservationData);
     return response.data;
   },
 

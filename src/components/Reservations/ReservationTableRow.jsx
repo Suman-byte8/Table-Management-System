@@ -24,7 +24,7 @@ const ReservationTableRow = ({ reservation, onDelete }) => {
         <ReservationStatusBadge status={reservation.status} />
       </td>
       <td className="whitespace-nowrap px-6 py-4">
-        <ReservationActions reservationId={reservation.id} onDelete={onDelete} />
+        <ReservationActions reservationId={reservation.id} onDelete={onDelete} onReservationUpdated={reservation.onReservationUpdated} />
       </td>
     </tr>
   );

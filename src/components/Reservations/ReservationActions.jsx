@@ -1,27 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
+import { reservationApi } from "../../api/reservations";
+import { toast } from "react-toastify";
 
-const ReservationActions = ({ reservationId, onDelete }) => {
+const ReservationActions = ({ reservationId, onReservationUpdated }) => {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleView = () => {
     navigate(`/reservations/${reservationId}`);
   };
 
-  const handleEdit = () => console.log("Edit reservation", reservationId);
+  const handleEdit = () => {
+    navigate(`/reservations/${reservationId}/edit`);
+  };
 
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await onDelete(reservationId);
+      await reservationApi.delete(reservationId);
+      toast.success("Reservation deleted successfully!");
+      
+      // Notify parent component to refresh data
+      if (onReservationUpdated) {
+        onReservationUpdated();
+      }
+    } catch (error) {
+      console.error("Error deleting reservation:", error);
+      toast.error(error.response?.data?.message || "Failed to delete reservation");
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -70,6 +83,7 @@ const ReservationActions = ({ reservationId, onDelete }) => {
               <button
                 onClick={handleDeleteCancel}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                disabled={isDeleting}
               >
                 Cancel
               </button>
@@ -80,7 +94,14 @@ const ReservationActions = ({ reservationId, onDelete }) => {
                   isDeleting ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
                 }`}
               >
-                {isDeleting ? "Deleting..." : "Delete"}
+                {isDeleting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Deleting...
+                  </div>
+                ) : (
+                  "Delete"
+                )}
               </button>
             </div>
           </div>

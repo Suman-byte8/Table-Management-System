@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiCalendar, FiClock, FiUsers, FiPhone, FiMail, FiMapPin, FiInfo } from "react-icons/fi";
-import { reservationApi } from "../../api/reservations";
+import { reservationApi } from "../api/reservations";
 
 const ReservationDetails = () => {
   const { id } = useParams();
