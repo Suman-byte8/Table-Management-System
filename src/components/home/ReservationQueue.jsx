@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { reservationApi } from "../../api/reservationsApi";
 import { tableApi } from "../../api/tableApi";
 import { toast } from "react-toastify";
+import socket from "../../socket";
 
 const ReservationQueue = ({ filters }) => {
   const [reservations, setReservations] = useState([]);
@@ -22,14 +23,18 @@ const ReservationQueue = ({ filters }) => {
         setLoading(true);
         setError(null);
 
-        const queryParams = { status: "pending" };
+        const queryParams = {
+          type: "restaurant" // Required parameter for the API
+        };
+
+        // Only filter by status if explicitly set in filters
+        if (filters && filters.status && filters.status !== "") {
+          queryParams.status = filters.status;
+        }
 
         if (filters) {
           if (filters.section && filters.section !== "") {
             queryParams.typeOfReservation = filters.section;
-          }
-          if (filters.status && filters.status !== "") {
-            queryParams.status = filters.status;
           }
           if (filters.timeSlot && filters.timeSlot !== "") {
             queryParams.timeSlot = filters.timeSlot;
@@ -81,6 +86,41 @@ const ReservationQueue = ({ filters }) => {
     };
 
     fetchReservations();
+
+    // Set up socket listeners for real-time updates
+    socket.on('reservationCreated', (newReservation) => {
+      console.log('New reservation created:', newReservation);
+      fetchReservations(); // Refresh the queue
+      toast.info('New reservation added to queue');
+    });
+
+    socket.on('reservationStatusChanged', (data) => {
+      console.log('Reservation status changed:', data);
+      fetchReservations(); // Refresh the queue
+      toast.info('Reservation status updated');
+    });
+
+    socket.on('reservationDeleted', (deletedReservation) => {
+      console.log('Reservation deleted:', deletedReservation);
+      fetchReservations(); // Refresh the queue
+      toast.info('Reservation removed from queue');
+    });
+
+    // Global event listener for refreshReservationData
+    const handleRefreshReservationData = () => {
+      console.log('Refreshing reservation queue data...');
+      fetchReservations();
+    };
+
+    window.addEventListener('refreshReservationData', handleRefreshReservationData);
+
+    // Cleanup socket listeners on unmount
+    return () => {
+      socket.off('reservationCreated');
+      socket.off('reservationStatusChanged');
+      socket.off('reservationDeleted');
+      window.removeEventListener('refreshReservationData', handleRefreshReservationData);
+    };
   }, [filters]);
 
   const handleAssignClick = async (reservation) => {
@@ -295,7 +335,7 @@ const ReservationQueue = ({ filters }) => {
             <p className="text-sm text-gray-500">
               {Object.values(filters || {}).some((v) => v !== "")
                 ? "No reservations match your current filters."
-                : "No pending reservations found."}
+                : "No reservations found."}
             </p>
             {filters && Object.values(filters).some((v) => v !== "") && (
               <p className="text-xs text-gray-400 mt-1">

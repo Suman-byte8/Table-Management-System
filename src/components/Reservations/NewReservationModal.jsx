@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FiX, FiCalendar, FiClock, FiUsers, FiMail, FiPhone } from "react-icons/fi";
 
 const NewReservationModal = ({ isOpen, onClose, onSave }) => {
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     typeOfReservation: "restaurant",
     noOfDiners: 2,
@@ -53,11 +54,19 @@ const NewReservationModal = ({ isOpen, onClose, onSave }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      onSave(formData);
+    if (!validate()) return;
+
+    setIsSaving(true);
+    try {
+      await onSave(formData);
       onClose();
+    } catch (error) {
+      console.error("Error saving reservation:", error);
+      // Optionally, set an error state here to display a message to the user
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -263,9 +272,19 @@ const NewReservationModal = ({ isOpen, onClose, onSave }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
+              disabled={isSaving}
+              className={`px-4 py-2 text-white rounded-md transition-colors ${
+                isSaving ? "bg-emerald-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
             >
-              Create Reservation
+              {isSaving ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Saving...
+                </div>
+              ) : (
+                "Create Reservation"
+              )}
             </button>
           </div>
         </form>

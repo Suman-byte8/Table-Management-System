@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { tableApi } from '../api/tableApi';
 import { toast } from 'react-toastify';
-import TableGrid from '../components/TableManagement/TableGrid';
-import TableCard from '../components/TableManagement/TableCard';
+import TableGrid from '../components/TableManagement/TableGridFixed2';
+import TableCard from '../components/TableManagement/TableCardFixed2';
 import TableDetails from './TableDetails';
 import BulkOperations from '../components/TableManagement/BulkOperations';
 import TableAnalytics from '../components/TableManagement/TableAnalytics';
 import MaintenanceManager from '../components/TableManagement/MaintenanceManager';
 import ExportManager from '../components/TableManagement/ExportManager';
-import socket from '../socket';
 
 const TableManagement = () => {
   const [tables, setTables] = useState([]);
@@ -27,65 +26,6 @@ const TableManagement = () => {
     priority: '',
     features: []
   });
-  const [sortKey, setSortKey] = useState('tableNumber');
-  const [sortOrder, setSortOrder] = useState('asc');
-
-  useEffect(() => {
-    fetchTables();
-
-    // Socket event listeners for real-time updates
-    socket.on('tableCreated', (newTable) => {
-      setTables((prevTables) => [...prevTables, newTable]);
-      toast.info(`New table created: ${newTable.tableNumber}`);
-    });
-
-    socket.on('tableUpdated', (updatedTable) => {
-      setTables((prevTables) =>
-        prevTables.map((table) =>
-          table._id === updatedTable._id ? updatedTable : table
-        )
-      );
-      toast.info(`Table updated: ${updatedTable.tableNumber}`);
-    });
-
-    socket.on('tableDeleted', ({ id }) => {
-      setTables((prevTables) => prevTables.filter((table) => table._id !== id));
-      toast.info('Table deleted');
-    });
-
-    socket.on('tablesUpdated', ({ tableIds, updates }) => {
-      setTables((prevTables) =>
-        prevTables.map((table) =>
-          tableIds.includes(table._id) ? { ...table, ...updates } : table
-        )
-      );
-      toast.info(`${tableIds.length} tables updated`);
-    });
-
-    socket.on('tablesDeleted', ({ tableIds }) => {
-      setTables((prevTables) =>
-        prevTables.filter((table) => !tableIds.includes(table._id))
-      );
-      toast.info(`${tableIds.length} tables deleted`);
-    });
-
-    // Global event listener for refreshTableData
-    const handleRefreshTableData = () => {
-      console.log('Refreshing table data...');
-      fetchTables();
-    };
-
-    window.addEventListener('refreshTableData', handleRefreshTableData);
-
-    return () => {
-      socket.off('tableCreated');
-      socket.off('tableUpdated');
-      socket.off('tableDeleted');
-      socket.off('tablesUpdated');
-      socket.off('tablesDeleted');
-      window.removeEventListener('refreshTableData', handleRefreshTableData);
-    };
-  }, []);
 
   useEffect(() => {
     fetchTables();
@@ -103,34 +43,10 @@ const TableManagement = () => {
     }
   };
 
-  const sortedTables = useMemo(() => {
-    return [...tables].sort((a, b) => {
-      const aValue = a[sortKey];
-      const bValue = b[sortKey];
-
-      if (aValue < bValue) {
-        return sortOrder === 'asc' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortOrder === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  }, [tables, sortKey, sortOrder]);
-
-  const handleSort = (key) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortKey(key);
-      setSortOrder('asc');
-    }
-  };
-
   const handleTableUpdate = async (id, updateData) => {
     try {
       const response = await tableApi.update(id, updateData);
-      // toast.success('Table updated successfully');
+      toast.success('Table updated successfully');
       fetchTables();
       setSelectedTable(null);
     } catch (error) {
@@ -313,34 +229,22 @@ const TableManagement = () => {
         <>
           {viewMode === 'grid' ? (
             <TableGrid
-              tables={sortedTables}
+              tables={tables}
               selectedTables={selectedTables}
               onTableSelect={handleTableSelect}
               onTableSelectSingle={setSelectedTable}
               onTableUpdate={handleTableUpdate}
               onTableDelete={handleTableDelete}
-              onSort={handleSort}
-              sortKey={sortKey}
-              sortOrder={sortOrder}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sortedTables.map(table => (
-                <TableCard
-                  key={table._id}
-                  table={table}
-                  onTableSelect={handleTableSelect}
-                  onTableSelectSingle={setSelectedTable}
-                  onTableUpdate={handleTableUpdate}
-                  onTableDelete={handleTableDelete}
-                  onAssignReservation={(reservationId) => {
-                    // Refresh tables and reservations after assignment
-                    fetchTables();
-                    // You might want to emit a socket event or refresh reservation queue here
-                  }}
-                />
-              ))}
-            </div>
+            <TableCard
+              tables={tables}
+              selectedTables={selectedTables}
+              onTableSelect={handleTableSelect}
+              onTableSelectSingle={setSelectedTable}
+              onTableUpdate={handleTableUpdate}
+              onTableDelete={handleTableDelete}
+            />
           )}
 
           {selectedTable && (

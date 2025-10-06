@@ -5,6 +5,7 @@ import AssignmentHistory from "../components/TableDetails/AssignmentHistory";
 import { useParams } from "react-router-dom";
 import { tableApi } from "../api/tableApi";
 import { toast } from "react-toastify";
+import socket from "../socket";
 
 const TableDetails = () => {
   const { id } = useParams();
@@ -47,7 +48,7 @@ const TableDetails = () => {
   ]);
 
   useEffect(() => {
-    console.log("🔍 useParams() ID:", id); 
+    console.log("🔍 useParams() ID:", id);
 
     if (!id) {
       console.log("❌ No ID provided - ID value:", id);
@@ -59,7 +60,7 @@ const TableDetails = () => {
     const fetchTableDetails = async () => {
       try {
         console.log("🚀 Fetching table details for ID:", id);
-        
+
         // Validate ID format (MongoDB ObjectId is 24 hex chars)
         if (!id || id.length !== 24 || !/^[a-f0-9]+$/i.test(id)) {
           console.log("❌ Invalid ID format:", id);
@@ -67,18 +68,18 @@ const TableDetails = () => {
           setLoading(false);
           return;
         }
-  
+
         setLoading(true);
         const response = await tableApi.getById(id);
         console.log("✅ API Response:", response);
-        
+
         if (!response?.data) {
           console.log("❌ No data in response");
           setError("Table not found");
           setLoading(false);
           return;
         }
-  
+
         setTable(response.data);
       } catch (error) {
         console.error("❌ Error fetching table details:", error);
@@ -90,7 +91,7 @@ const TableDetails = () => {
         setLoading(false);
       }
     };
-  
+
     if (id) {
       fetchTableDetails(id);
     } else {
@@ -98,6 +99,42 @@ const TableDetails = () => {
       setError("No table ID provided");
       setLoading(false);
     }
+
+    // Set up socket listeners for real-time updates
+    socket.on('tableUpdated', (updatedTable) => {
+      console.log('Table updated:', updatedTable);
+      if (updatedTable._id === id) {
+        setTable(updatedTable);
+        toast.info('Table updated');
+      }
+    });
+
+    socket.on('tableDeleted', ({ id: deletedId }) => {
+      console.log('Table deleted:', deletedId);
+      if (deletedId === id) {
+        toast.warning('This table has been deleted');
+        window.location.href = '/table-management';
+      }
+    });
+
+    // Global event listener for refreshTableDetails
+    const handleRefreshTableDetails = (event) => {
+      console.log('Refreshing table details...', event.detail);
+      if (event.detail && event.detail._id === id) {
+        setTable(event.detail);
+      } else {
+        fetchTableDetails();
+      }
+    };
+
+    window.addEventListener('refreshTableDetails', handleRefreshTableDetails);
+
+    // Cleanup socket listeners on unmount
+    return () => {
+      socket.off('tableUpdated');
+      socket.off('tableDeleted');
+      window.removeEventListener('refreshTableDetails', handleRefreshTableDetails);
+    };
   }, [id]);
 
   if (loading) {
@@ -161,7 +198,10 @@ const TableDetails = () => {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Table Info Card */}
         <div className="lg:col-span-2">
-          <TableInfo table={table} />
+          <TableInfo table={table} onTableUpdate={(id, updatedTable) => {
+            setTable(updatedTable);
+            toast.success('Table updated successfully');
+          }} />
         </div>
 
         {/* Current Assignee */}

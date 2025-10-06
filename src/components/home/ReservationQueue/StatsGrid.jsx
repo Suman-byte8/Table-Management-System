@@ -57,6 +57,18 @@ const StatsGrid = () => {
     };
 
     fetchStats();
+
+    // Global event listener for refreshReservationData
+    const handleRefreshReservationData = () => {
+      console.log('Refreshing stats grid data...');
+      fetchStats();
+    };
+
+    window.addEventListener('refreshReservationData', handleRefreshReservationData);
+
+    return () => {
+      window.removeEventListener('refreshReservationData', handleRefreshReservationData);
+    };
   }, []);
 
   return (

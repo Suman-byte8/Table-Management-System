@@ -1,7 +1,7 @@
 import React from "react";
 import ReservationTableRow from "./ReservationTableRow";
 
-const ReservationTable = ({ reservations, onDelete }) => {
+const ReservationTable = ({ reservations, onDelete, onReservationUpdated }) => {
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
       <div className="overflow-x-auto">
@@ -29,7 +29,12 @@ const ReservationTable = ({ reservations, onDelete }) => {
           <tbody className="divide-y divide-zinc-200">
             {reservations.length > 0 ? (
               reservations.map((res) => (
-                <ReservationTableRow key={res.id} reservation={res} onDelete={onDelete} />
+                <ReservationTableRow
+                  key={res.id}
+                  reservation={res}
+                  onDelete={onDelete}
+                  onReservationUpdated={onReservationUpdated}
+                />
               ))
             ) : (
               <tr>

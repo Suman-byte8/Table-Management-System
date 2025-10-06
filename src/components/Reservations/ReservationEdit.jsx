@@ -16,7 +16,7 @@ const ReservationEdit = () => {
     const fetchReservation = async () => {
       try {
         setLoading(true);
-        const response = await reservationApi.getById(id);
+        const response = await reservationApi.getById("restaurant", id);
         setReservation(response.data);
       } catch (error) {
         console.error("Error fetching reservation:", error);
@@ -32,7 +32,7 @@ const ReservationEdit = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name.startsWith("guestInfo.")) {
       const key = name.split(".")[1];
       setReservation(prev => ({
@@ -53,7 +53,7 @@ const ReservationEdit = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    
+
     try {
       // Prepare update data (exclude _id, createdAt, updatedAt)
       const updateData = {
@@ -68,7 +68,7 @@ const ReservationEdit = () => {
         status: reservation.status,
       };
 
-      await reservationApi.update(id, updateData);
+      await reservationApi.update("restaurant", id, updateData);
       toast.success("Reservation updated successfully!");
       navigate(`/reservations/${id}`);
     } catch (error) {

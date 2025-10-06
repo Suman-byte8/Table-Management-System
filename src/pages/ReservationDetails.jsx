@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiCalendar, FiClock, FiUsers, FiPhone, FiMail, FiMapPin, FiInfo } from "react-icons/fi";
 import { reservationApi } from "../api/reservationsApi";
+import socket from "../socket";
+import { toast } from "react-toastify";
 
 const ReservationDetails = () => {
   const { id } = useParams();
@@ -14,7 +16,8 @@ const ReservationDetails = () => {
     const fetchReservation = async () => {
       try {
         setLoading(true);
-        const data = await reservationApi.getById(id);
+        // Use 'restaurant' as the default type since most reservations are restaurant reservations
+        const data = await reservationApi.getById("restaurant", id);
         setReservation(data.data);
         // Debug: Check what we actually received
         console.log("Fetched reservation:", data);
@@ -28,7 +31,43 @@ const ReservationDetails = () => {
     };
 
     fetchReservation();
-  }, [id]);
+
+    // Set up socket listeners for real-time updates
+    socket.on('reservationStatusChanged', (data) => {
+      console.log('Reservation status changed:', data);
+      if (data.id === id) {
+        fetchReservation();
+        toast.info('Reservation status updated');
+      }
+    });
+
+    socket.on('reservationDeleted', (deletedReservation) => {
+      console.log('Reservation deleted:', deletedReservation);
+      if (deletedReservation.id === id) {
+        toast.warning('This reservation has been deleted');
+        navigate('/reservations');
+      }
+    });
+
+    // Global event listener for refreshReservationDetails
+    const handleRefreshReservationDetails = (event) => {
+      console.log('Refreshing reservation details...', event.detail);
+      if (event.detail && event.detail.id === id) {
+        setReservation(event.detail);
+      } else {
+        fetchReservation();
+      }
+    };
+
+    window.addEventListener('refreshReservationDetails', handleRefreshReservationDetails);
+
+    // Cleanup socket listeners on unmount
+    return () => {
+      socket.off('reservationStatusChanged');
+      socket.off('reservationDeleted');
+      window.removeEventListener('refreshReservationDetails', handleRefreshReservationDetails);
+    };
+  }, [id, navigate]);
 
   if (loading) {
     return (

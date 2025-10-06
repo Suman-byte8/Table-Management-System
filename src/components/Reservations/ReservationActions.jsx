@@ -4,11 +4,14 @@ import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 import { reservationApi } from "../../api/reservationsApi";
 import { toast } from "react-toastify";
 
-const ReservationActions = ({ reservationId, onReservationUpdated }) => {
+const ReservationActions = ({ reservationId, reservationType, onReservationUpdated }) => {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Disable all actions when deleting
+  const isDisabled = isDeleting;
 
   const handleView = () => {
     navigate(`/reservations/${reservationId}`);
@@ -25,7 +28,7 @@ const ReservationActions = ({ reservationId, onReservationUpdated }) => {
   const handleDeleteConfirm = async () => {
     setIsDeleting(true);
     try {
-      await reservationApi.delete(reservationId);
+      await reservationApi.delete(reservationType, reservationId);
       toast.success("Reservation deleted successfully!");
       
       // Notify parent component to refresh data
@@ -50,24 +53,43 @@ const ReservationActions = ({ reservationId, onReservationUpdated }) => {
       <div className="flex items-center gap-2">
         <button
           onClick={handleView}
-          className="p-2 text-zinc-500 hover:text-emerald-500 transition-colors"
+          disabled={isDisabled}
+          className={`p-2 transition-colors ${
+            isDisabled
+              ? "text-zinc-300 cursor-not-allowed"
+              : "text-zinc-500 hover:text-emerald-500 cursor-pointer"
+          }`}
           title="View Details"
         >
           <FiEye className="w-4 h-4" />
         </button>
         <button
           onClick={handleEdit}
-          className="p-2 text-zinc-500 hover:text-blue-500 transition-colors"
+          disabled={isDisabled}
+          className={`p-2 transition-colors ${
+            isDisabled
+              ? "text-zinc-300 cursor-not-allowed"
+              : "text-zinc-500 hover:text-blue-500 cursor-pointer"
+          }`}
           title="Edit Reservation"
         >
           <FiEdit className="w-4 h-4" />
         </button>
         <button
           onClick={handleDeleteClick}
-          className="p-2 text-zinc-500 hover:text-red-500 transition-colors"
+          disabled={isDisabled}
+          className={`p-2 transition-colors ${
+            isDisabled
+              ? "text-zinc-300 cursor-not-allowed"
+              : "text-zinc-500 hover:text-red-500 cursor-pointer"
+          }`}
           title="Delete Reservation"
         >
-          <FiTrash2 className="w-4 h-4" />
+          {isDeleting ? (
+            <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"></div>
+          ) : (
+            <FiTrash2 className="w-4 h-4" />
+          )}
         </button>
       </div>
 
@@ -82,7 +104,7 @@ const ReservationActions = ({ reservationId, onReservationUpdated }) => {
             <div className="flex justify-end gap-3">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isDeleting}
               >
                 Cancel
@@ -90,8 +112,8 @@ const ReservationActions = ({ reservationId, onReservationUpdated }) => {
               <button
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className={`px-4 py-2 text-white rounded-md transition-colors ${
-                  isDeleting ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+                className={`px-4 py-2 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isDeleting ? "bg-red-400" : "bg-red-600 hover:bg-red-700"
                 }`}
               >
                 {isDeleting ? (
