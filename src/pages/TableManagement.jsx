@@ -15,7 +15,7 @@ const TableManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTable, setSelectedTable] = useState(null);
   const [selectedTables, setSelectedTables] = useState([]);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'card'
+
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showMaintenance, setShowMaintenance] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -128,13 +128,20 @@ const TableManagement = () => {
   };
 
   const handleTableUpdate = async (id, updateData) => {
+    // If child has already performed the update (local-only), don't PUT again
+    if (updateData && updateData.__localOnly) {
+      setTables(prev => prev.map(t => (t._id === id ? { ...t, ...updateData, __localOnly: undefined } : t)));
+      setSelectedTable(null);
+      return;
+    }
     try {
-      const response = await tableApi.update(id, updateData);
-      // toast.success('Table updated successfully');
+      await tableApi.update(id, updateData);
       fetchTables();
       setSelectedTable(null);
     } catch (error) {
-      toast.error('Failed to update table');
+      // Surface server message if present
+      const msg = error?.response?.data?.message || 'Failed to update table';
+      toast.error(msg);
     }
   };
 
@@ -222,23 +229,8 @@ const TableManagement = () => {
           </div>
         </div>
 
-        {/* View Toggle and Filters */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center space-y-4 lg:space-y-0">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 rounded-md ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Grid View
-            </button>
-            <button
-              onClick={() => setViewMode('card')}
-              className={`px-4 py-2 rounded-md ${viewMode === 'card' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-            >
-              Card View
-            </button>
-          </div>
-
+        {/* Filters */}
+        <div className="flex flex-col lg:flex-row justify-end items-start lg:items-center space-y-4 lg:space-y-0">
           <div className="flex flex-wrap gap-2">
             <input
               type="text"
@@ -311,37 +303,23 @@ const TableManagement = () => {
         </div>
       ) : (
         <>
-          {viewMode === 'grid' ? (
-            <TableGrid
-              tables={sortedTables}
-              selectedTables={selectedTables}
-              onTableSelect={handleTableSelect}
-              onTableSelectSingle={setSelectedTable}
-              onTableUpdate={handleTableUpdate}
-              onTableDelete={handleTableDelete}
-              onSort={handleSort}
-              sortKey={sortKey}
-              sortOrder={sortOrder}
-            />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sortedTables.map(table => (
-                <TableCard
-                  key={table._id}
-                  table={table}
-                  onTableSelect={handleTableSelect}
-                  onTableSelectSingle={setSelectedTable}
-                  onTableUpdate={handleTableUpdate}
-                  onTableDelete={handleTableDelete}
-                  onAssignReservation={(reservationId) => {
-                    // Refresh tables and reservations after assignment
-                    fetchTables();
-                    // You might want to emit a socket event or refresh reservation queue here
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {sortedTables.map(table => (
+              <TableCard
+                key={table._id}
+                table={table}
+                onTableSelect={handleTableSelect}
+                onTableSelectSingle={setSelectedTable}
+                onTableUpdate={handleTableUpdate}
+                onTableDelete={handleTableDelete}
+                onAssignReservation={(reservationId) => {
+                  // Refresh tables and reservations after assignment
+                  fetchTables();
+                  // You might want to emit a socket event or refresh reservation queue here
+                }}
+              />
+            ))}
+          </div>
 
           {selectedTable && (
             <TableDetails

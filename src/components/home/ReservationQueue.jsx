@@ -67,7 +67,7 @@ const ReservationQueue = ({ filters }) => {
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .slice(0, 5)
           .map((res) => ({
-            id: res._id,
+            id: res._id.toString(),
             guestName: res.guestInfo?.name || "Unknown Guest",
             partySize: res.noOfDiners || 0,
             time: res.timeSlot || "N/A",
@@ -170,7 +170,9 @@ const ReservationQueue = ({ filters }) => {
     }
   };
 
-  const handleAssignTable = async (tableId) => {
+  const handleAssignTable = async (tableChoice) => {
+    const tableId = tableChoice && (tableChoice.id || tableChoice._id || tableChoice);
+    const tableNumberForToast = tableChoice && tableChoice.tableNumber ? tableChoice.tableNumber : tableId;
     if (!selectedReservation || !tableId) {
       console.error("Cannot assign: Missing reservation or table ID");
       toast.error("Error: Missing reservation or table information.");
@@ -186,17 +188,17 @@ const ReservationQueue = ({ filters }) => {
         assignedTable: tableId, // Or table._id if preferred by backend
         confirmedAt: new Date().toISOString(),
       };
-      const reservationUpdateResponse = await reservationApi.update(selectedReservation.id, updatedReservationData);
+      const reservationUpdateResponse = await reservationApi.update("restaurant", selectedReservation.id, updatedReservationData);
       console.log("Reservation updated successfully:", reservationUpdateResponse.data);
 
       // --- UPDATE TABLE ---
-      const tableToUpdate = availableTables.find(t => t.id === tableId || t._id === tableId || t.tableNumber === tableId);
+      const tableToUpdate = availableTables.find(t => t._id === tableId);
       const updatedTableData = {
         status: 'reserved',
         lastAssignedAt: new Date().toISOString(),
         // currentReservation: selectedReservation.id, // Uncomment if backend schema/logic uses this
       };
-      const tableUpdateResponse = await tableApi.update(tableToUpdate?._id, updatedTableData);
+      const tableUpdateResponse = await tableApi.update(tableId, updatedTableData);
       console.log("Table updated successfully:", tableUpdateResponse.data);
 
       // --- OPTIMISTICALLY REMOVE FROM QUEUE ---
@@ -208,7 +210,7 @@ const ReservationQueue = ({ filters }) => {
       // --- CLOSE MODAL ---
       handleCloseAssignModal();
 
-      toast.success(`Table ${tableId} assigned to ${selectedReservation.guestName} successfully!`);
+      toast.success(`Table ${tableNumberForToast} assigned to ${selectedReservation.guestName} successfully!`);
 
     } catch (err) {
       console.error("Error assigning table:", err);

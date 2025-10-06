@@ -27,7 +27,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Error:", error.response?.data || error.message);
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    // Suppress noisy console errors for expected conflict (e.g., table already reserved)
+    if (status === 409 && (data?.errorCode === 'TABLE_NOT_AVAILABLE' || data?.message)) {
+      return Promise.reject(error);
+    }
+    console.error("API Error:", data || error.message);
     return Promise.reject(error);
   }
 );

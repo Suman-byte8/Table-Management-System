@@ -10,7 +10,7 @@ import socket from "../socket";
 const TableDetails = () => {
   const { id } = useParams();
   console.log("🔍 useParams() ID:", id);
-  
+
   const [table, setTable] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,86 +52,98 @@ const TableDetails = () => {
           return;
         }
 
-    setTable(response.data);
-    // Update currentAssignee and assignmentHistory from response data
-    if (response.data.assignedTo) {
-      setCurrentAssignee({
-        name: response.data.assignedTo.name,
-        role: response.data.assignedTo.role,
-        assignedAt: response.data.lastAssignedAt ? new Date(response.data.lastAssignedAt).toLocaleTimeString() : 'N/A',
-        avatar: response.data.assignedTo.avatar,
-      });
+        setTable(response.data);
+        // Update currentAssignee and assignmentHistory from response data
+        if (response.data.currentGuest) {
+          setCurrentAssignee({
+            name: response.data.currentGuest,
+            role: "Guest",
+            assignedAt: response.data.lastAssignedAt
+              ? new Date(response.data.lastAssignedAt).toLocaleTimeString()
+              : "N/A",
+            avatar: "/default-avatar.png", // Default avatar
+          });
+        } else {
+          setCurrentAssignee(null);
+        }
+
+        if (
+          response.data.assignmentHistory &&
+          Array.isArray(response.data.assignmentHistory)
+        ) {
+          const history = response.data.assignmentHistory.map((item) => ({
+            name: item.guestName || item.assignedBy || "Unknown",
+            role: "Guest",
+            assignedAt: item.assignedAt
+              ? new Date(item.assignedAt).toLocaleTimeString()
+              : "N/A",
+            unassignedAt: item.freedAt
+              ? new Date(item.freedAt).toLocaleTimeString()
+              : "N/A",
+            avatar: "/default-avatar.png", // Default avatar
+          }));
+          setAssignmentHistory(history);
+        } else {
+          setAssignmentHistory([]);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching table details:", error);
+        console.error("❌ Error response:", error.response);
+        setError("Failed to load table details");
+        toast.error("Failed to load table details");
+      } finally {
+        console.log("✅ Finally block executed");
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchTableDetails(id);
     } else {
-      setCurrentAssignee(null);
+      console.log("❌ No ID provided");
+      setError("No table ID provided");
+      setLoading(false);
     }
 
-    if (response.data.assignmentHistory && Array.isArray(response.data.assignmentHistory)) {
-      const history = response.data.assignmentHistory.map(item => ({
-        name: item.assignedBy ? item.assignedBy.name : 'Unknown',
-        role: item.assignedBy ? item.assignedBy.role : 'Unknown',
-        assignedAt: item.assignedAt ? new Date(item.assignedAt).toLocaleTimeString() : 'N/A',
-        unassignedAt: item.freedAt ? new Date(item.freedAt).toLocaleTimeString() : 'N/A',
-        avatar: item.assignedBy ? item.assignedBy.avatar : '',
-      }));
-      setAssignmentHistory(history);
-    } else {
-      setAssignmentHistory([]);
-    }
-  } catch (error) {
-    console.error("❌ Error fetching table details:", error);
-    console.error("❌ Error response:", error.response);
-    setError("Failed to load table details");
-    toast.error("Failed to load table details");
-  } finally {
-    console.log("✅ Finally block executed");
-    setLoading(false);
-  }
-};
+    // Set up socket listeners for real-time updates
+    socket.on("tableUpdated", (updatedTable) => {
+      console.log("Table updated:", updatedTable);
+      if (updatedTable._id === id) {
+        setTable(updatedTable);
+        toast.info("Table updated");
+      }
+    });
 
-if (id) {
-  fetchTableDetails(id);
-} else {
-  console.log("❌ No ID provided");
-  setError("No table ID provided");
-  setLoading(false);
-}
+    socket.on("tableDeleted", ({ id: deletedId }) => {
+      console.log("Table deleted:", deletedId);
+      if (deletedId === id) {
+        toast.warning("This table has been deleted");
+        window.location.href = "/table-management";
+      }
+    });
 
-// Set up socket listeners for real-time updates
-socket.on('tableUpdated', (updatedTable) => {
-  console.log('Table updated:', updatedTable);
-  if (updatedTable._id === id) {
-    setTable(updatedTable);
-    toast.info('Table updated');
-  }
-});
+    // Global event listener for refreshTableDetails
+    const handleRefreshTableDetails = (event) => {
+      console.log("Refreshing table details...", event.detail);
+      if (event.detail && event.detail._id === id) {
+        setTable(event.detail);
+      } else {
+        fetchTableDetails();
+      }
+    };
 
-socket.on('tableDeleted', ({ id: deletedId }) => {
-  console.log('Table deleted:', deletedId);
-  if (deletedId === id) {
-    toast.warning('This table has been deleted');
-    window.location.href = '/table-management';
-  }
-});
+    window.addEventListener("refreshTableDetails", handleRefreshTableDetails);
 
-// Global event listener for refreshTableDetails
-const handleRefreshTableDetails = (event) => {
-  console.log('Refreshing table details...', event.detail);
-  if (event.detail && event.detail._id === id) {
-    setTable(event.detail);
-  } else {
-    fetchTableDetails();
-  }
-};
-
-window.addEventListener('refreshTableDetails', handleRefreshTableDetails);
-
-// Cleanup socket listeners on unmount
-return () => {
-  socket.off('tableUpdated');
-  socket.off('tableDeleted');
-  window.removeEventListener('refreshTableDetails', handleRefreshTableDetails);
-};
-}, [id]);
+    // Cleanup socket listeners on unmount
+    return () => {
+      socket.off("tableUpdated");
+      socket.off("tableDeleted");
+      window.removeEventListener(
+        "refreshTableDetails",
+        handleRefreshTableDetails
+      );
+    };
+  }, [id]);
 
   if (loading) {
     return (
@@ -150,7 +162,9 @@ return () => {
     return (
       <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Table</h3>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">
+            Error Loading Table
+          </h3>
           <p className="text-red-600">{error}</p>
           <button
             onClick={() => window.history.back()}
@@ -167,8 +181,12 @@ return () => {
     return (
       <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Table Not Found</h3>
-          <p className="text-gray-500">The table you're looking for doesn't exist.</p>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            Table Not Found
+          </h3>
+          <p className="text-gray-500">
+            The table you're looking for doesn't exist.
+          </p>
           <button
             onClick={() => window.history.back()}
             className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
@@ -182,6 +200,16 @@ return () => {
 
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
+      {/* Back Button */}
+      <div className="">
+        <button
+          onClick={() => window.history.back()}
+          className="px-4 py-2 mb-6 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+        >
+          &larr; Back to Table Management
+        </button>
+      </div>
+
       {/* Page Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
@@ -194,10 +222,13 @@ return () => {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Table Info Card */}
         <div className="lg:col-span-2">
-          <TableInfo table={table} onTableUpdate={(id, updatedTable) => {
-            setTable(updatedTable);
-            toast.success('Table updated successfully');
-          }} />
+          <TableInfo
+            table={table}
+            onTableUpdate={(id, updatedTable) => {
+              setTable(updatedTable);
+              toast.success("Table updated successfully");
+            }}
+          />
         </div>
 
         {/* Current Assignee */}

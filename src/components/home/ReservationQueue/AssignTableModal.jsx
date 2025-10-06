@@ -34,7 +34,7 @@ const AssignTableModal = ({ reservation, availableTables = [], onAssign, onClose
                   key={table.id} // Assuming table.id is unique and reliable
                   onClick={() => {
                     if (isAvailable) {
-                      onAssign(table.id); // Pass the id used for identification in the list
+                      onAssign({ id: table._id, tableNumber: table.tableNumber || table.id });
                     }
                   }}
                   className={`p-3 border rounded-md transition-colors flex justify-between items-center ${
@@ -86,7 +86,7 @@ const AssignTableModal = ({ reservation, availableTables = [], onAssign, onClose
               onClick={() => {
                 const firstAvailableTable = availableTables.find(t => t.status === 'available' && t._id);
                 if (firstAvailableTable) {
-                  onAssign(firstAvailableTable.id);
+                  onAssign({ id: firstAvailableTable._id, tableNumber: firstAvailableTable.tableNumber || firstAvailableTable.id });
                 }
               }}
               className="flex-1 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600"

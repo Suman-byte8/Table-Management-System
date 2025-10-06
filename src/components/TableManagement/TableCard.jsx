@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { tableApi } from "../../api/tableApi";
 import { reservationApi } from "../../api/reservationsApi";
@@ -37,13 +37,18 @@ const TableCard = ({ table, onTableUpdate, onAssignReservation }) => {
     return null;
   }
 
+  const lastLocalUpdateRef = useRef(0);
+
   useEffect(() => {
     // Set up socket listeners for real-time updates
     socket.on('tableUpdated', (updatedTable) => {
       console.log('Table updated:', updatedTable);
       if (updatedTable._id === tableId) {
         onTableUpdate && onTableUpdate(tableId, updatedTable);
-        toast.info('Table updated');
+        // Suppress info toast if we recently triggered a local update
+        if (Date.now() - lastLocalUpdateRef.current > 1500) {
+          toast.info('Table updated', { toastId: `table-updated-${tableId}` });
+        }
       }
     });
 
@@ -72,20 +77,41 @@ const TableCard = ({ table, onTableUpdate, onAssignReservation }) => {
     };
   }, [tableId, onTableUpdate]);
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, { silent = false } = {}) => {
     try {
       setLoading(true);
+      // Avoid redundant update calls if status already set
+      if (table.status === newStatus) {
+        return true;
+      }
       const updateData = {
         status: newStatus,
         lastStatusChange: new Date().toISOString()
       };
 
-      await tableApi.update(tableId, updateData);
-      onTableUpdate(tableId, { ...table, status: newStatus });
-      toast.success(`Table ${table.tableNumber} status updated to ${newStatus.replace('_', ' ')}`);
+      try {
+        lastLocalUpdateRef.current = Date.now();
+        await tableApi.update(tableId, updateData);
+      } catch (err) {
+        if (err?.response?.status === 409) {
+          const msg = err.response?.data?.message || 'Table not available';
+          toast.error(msg, { toastId: `table-conflict-${tableId}` });
+          return false;
+        }
+        throw err;
+      }
+
+      onTableUpdate(tableId, { ...table, status: newStatus, __localOnly: true });
+      if (!silent) {
+        toast.success(`Table ${table.tableNumber} status updated to ${newStatus.replace('_', ' ')}`,
+          { toastId: `table-status-${tableId}-${newStatus}` }
+        );
+      }
       setShowStatusMenu(false);
+      return true;
     } catch (error) {
-      toast.error('Failed to update table status');
+      toast.error('Failed to update table status', { toastId: `table-status-fail-${tableId}` });
+      return false;
     } finally {
       setLoading(false);
     }
@@ -110,20 +136,57 @@ const TableCard = ({ table, onTableUpdate, onAssignReservation }) => {
 
   const handleReservationAssign = async (reservationId) => {
     try {
-      // Update reservation status
-      await reservationApi.update(reservationId, {
+      // Fetch current table status from backend to ensure we have the latest data
+      const currentResp = await tableApi.getById(tableId);
+      const currentTableData = currentResp?.data || currentResp;
+      if (!currentTableData || currentTableData.status !== 'available') {
+        const currentStatus = currentTableData?.status || 'unknown';
+        const statusMessage = currentStatus === 'reserved' ? 'reserved' :
+                             currentStatus === 'occupied' ? 'occupied' :
+                             currentStatus === 'maintenance' ? 'under maintenance' :
+                             'unavailable';
+
+        toast.error(`Table ${table.tableNumber} is currently ${statusMessage}. Please select a different table.`);
+        setShowAssignModal(false);
+        // Refresh table data to update UI
+        window.dispatchEvent(new CustomEvent('refreshTableData'));
+        return;
+      }
+
+      // Reserve the table first to avoid race/conflict
+      const reserved = await handleStatusChange('reserved', { silent: true });
+      if (!reserved) {
+        setShowAssignModal(false);
+        window.dispatchEvent(new CustomEvent('refreshTableData'));
+        return;
+      }
+
+      // Update reservation status after table reserved
+      await reservationApi.update("restaurant", reservationId, {
         status: 'confirmed',
         assignedTable: tableId
       });
 
-      // Update table status
-      await handleStatusChange('reserved');
-
-      toast.success('Reservation assigned successfully');
+      toast.success(`Reservation assigned to Table ${table.tableNumber} successfully!`, { toastId: `reservation-assigned-${tableId}` });
       setShowAssignModal(false);
       onAssignReservation && onAssignReservation(reservationId);
     } catch (error) {
-      toast.error('Failed to assign reservation');
+      // Handle specific backend errors
+      if (error.response?.status === 409) {
+        // 409 Conflict - Table likely taken
+        const errorMessage = error.response.data?.message || "Table was assigned by another user.";
+        toast.error(`Assignment failed: ${errorMessage}`);
+        console.warn("⚠️ Table assignment conflict:", errorMessage);
+        // Refresh table data to get updated status
+        window.dispatchEvent(new CustomEvent('refreshTableData'));
+      } else if (error.response?.status === 400 || error.response?.status === 404) {
+        toast.error("Assignment failed. Please check reservation details and try again.");
+        console.error("❌ Assignment request error:", error.response.data);
+      } else {
+        toast.error("Failed to assign reservation. Please try again.");
+        console.error("❌ Unexpected error during assignment:", error);
+      }
+      setShowAssignModal(false);
     }
   };
 
