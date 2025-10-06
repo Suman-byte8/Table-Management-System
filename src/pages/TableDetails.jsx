@@ -15,37 +15,9 @@ const TableDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock data for current assignee and history (you'll replace with real API later)
-  const [currentAssignee, setCurrentAssignee] = useState({
-    name: "Ethan Carter",
-    role: "Server",
-    assignedAt: "6:00 PM",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuA0ooHRv6v3hS0YlKDCJhb6XgHrswBbAro6yn8-Ni8hZH-q_Ni9hXiNe0szQB0EhW80Hgjid15-gOfUwLIQ4OsWKz_2kaq9FOUY5AFf0O6DeNDXdyYcGYGKD3kff9kdAZBKR94G5sQHm6RIGYCptoO4sOS94_2a6wz-LrBbM2fDq_6AWzQfR_YUDEpiaN237vC1J2BhV3MCbVGc74x8lHrUQVEld1GoPZZupdpikzTYzsH6hT2iIbDow76Yt9zKAoXJUTtETWncDYQ",
-  });
-
-  const [assignmentHistory, setAssignmentHistory] = useState([
-    {
-      name: "Olivia Bennett",
-      role: "Server",
-      assignedAt: "5:00 PM",
-      unassignedAt: "6:00 PM",
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCzTHd2kheNUthuTp97jIiqxSzm49GVudT0Kavq6GBqWo29pMA0OrAXz43kxWioHCNtoovIUYYgt0NULlIobQEgdDKSMRUep4kSlox9Lk1SSp7msMUlvRSjwzJINNDFnaHedi7uwK20bXaqNnWjrxwFsiakYGEi1Ug3JY5wEcZ6CNUMBuO7DSZisKyOFHcfb-eq3wqiYQfNJIyY304j-Zc_o4UTau9UEJZ2tEjHpqHlP1XB1cRVa-RigeoiLmBubNvQ55qgWqflnB4",
-    },
-    {
-      name: "Noah Thompson",
-      role: "Server",
-      assignedAt: "4:00 PM",
-      unassignedAt: "5:00 PM",
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCp1N16uGRalqdL5vgre2IbDgVahMhcRKEyvQ-R7hsUD9h6Cxh2gJEmz1jG8GwP4au_CH55w0v4hs5BM-LHLbhEEqA_gvKdsKXAKCpcVPRHyK53qwomjQV-ZFu64BgP8JNhb8Z5d2KVqEzCDR5MYDan20_hlNFavcsBQzYnYbhgrBUzNdwAxyjT7dWkvtEbBA5OXOyOFvazwE_0QOdzXczYL0-szzGvA5EaJT4IPJadLk2mC63ejz0arbG6MOejt5zr-IUmYTbrcv0",
-    },
-    {
-      name: "Ava Harper",
-      role: "Server",
-      assignedAt: "3:00 PM",
-      unassignedAt: "4:00 PM",
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBdJOw--MP_T1oDaHZ0hqKoj_LBkZ8olFzD0yvw289xlHjsFomROsazMvGMZEtuAsEkSlAO3ATVqIySfih05qXZ9eXWNHUZW5DtvqbpuFutUPm4EUZdnz9wtiofvtxU-Nw3Z-Ta7RjKGl1svdKsZidpB9oW8e-JArf9NOoGd5kI5T-z74p8wT5083gw_OkNdKJL6-EorrlWQLR28b0Oms-wbIgyJFZUeVf2reXFTypZQv44lmXNqb3spKr1ebShAgeO1PQGNJm9-mk",
-    },
-  ]);
+  // Current assignee and history data from API
+  const [currentAssignee, setCurrentAssignee] = useState(null);
+  const [assignmentHistory, setAssignmentHistory] = useState([]);
 
   useEffect(() => {
     console.log("🔍 useParams() ID:", id);
@@ -80,62 +52,86 @@ const TableDetails = () => {
           return;
         }
 
-        setTable(response.data);
-      } catch (error) {
-        console.error("❌ Error fetching table details:", error);
-        console.error("❌ Error response:", error.response);
-        setError("Failed to load table details");
-        toast.error("Failed to load table details");
-      } finally {
-        console.log("✅ Finally block executed");
-        setLoading(false);
-      }
-    };
-
-    if (id) {
-      fetchTableDetails(id);
+    setTable(response.data);
+    // Update currentAssignee and assignmentHistory from response data
+    if (response.data.assignedTo) {
+      setCurrentAssignee({
+        name: response.data.assignedTo.name,
+        role: response.data.assignedTo.role,
+        assignedAt: response.data.lastAssignedAt ? new Date(response.data.lastAssignedAt).toLocaleTimeString() : 'N/A',
+        avatar: response.data.assignedTo.avatar,
+      });
     } else {
-      console.log("❌ No ID provided");
-      setError("No table ID provided");
-      setLoading(false);
+      setCurrentAssignee(null);
     }
 
-    // Set up socket listeners for real-time updates
-    socket.on('tableUpdated', (updatedTable) => {
-      console.log('Table updated:', updatedTable);
-      if (updatedTable._id === id) {
-        setTable(updatedTable);
-        toast.info('Table updated');
-      }
-    });
+    if (response.data.assignmentHistory && Array.isArray(response.data.assignmentHistory)) {
+      const history = response.data.assignmentHistory.map(item => ({
+        name: item.assignedBy ? item.assignedBy.name : 'Unknown',
+        role: item.assignedBy ? item.assignedBy.role : 'Unknown',
+        assignedAt: item.assignedAt ? new Date(item.assignedAt).toLocaleTimeString() : 'N/A',
+        unassignedAt: item.freedAt ? new Date(item.freedAt).toLocaleTimeString() : 'N/A',
+        avatar: item.assignedBy ? item.assignedBy.avatar : '',
+      }));
+      setAssignmentHistory(history);
+    } else {
+      setAssignmentHistory([]);
+    }
+  } catch (error) {
+    console.error("❌ Error fetching table details:", error);
+    console.error("❌ Error response:", error.response);
+    setError("Failed to load table details");
+    toast.error("Failed to load table details");
+  } finally {
+    console.log("✅ Finally block executed");
+    setLoading(false);
+  }
+};
 
-    socket.on('tableDeleted', ({ id: deletedId }) => {
-      console.log('Table deleted:', deletedId);
-      if (deletedId === id) {
-        toast.warning('This table has been deleted');
-        window.location.href = '/table-management';
-      }
-    });
+if (id) {
+  fetchTableDetails(id);
+} else {
+  console.log("❌ No ID provided");
+  setError("No table ID provided");
+  setLoading(false);
+}
 
-    // Global event listener for refreshTableDetails
-    const handleRefreshTableDetails = (event) => {
-      console.log('Refreshing table details...', event.detail);
-      if (event.detail && event.detail._id === id) {
-        setTable(event.detail);
-      } else {
-        fetchTableDetails();
-      }
-    };
+// Set up socket listeners for real-time updates
+socket.on('tableUpdated', (updatedTable) => {
+  console.log('Table updated:', updatedTable);
+  if (updatedTable._id === id) {
+    setTable(updatedTable);
+    toast.info('Table updated');
+  }
+});
 
-    window.addEventListener('refreshTableDetails', handleRefreshTableDetails);
+socket.on('tableDeleted', ({ id: deletedId }) => {
+  console.log('Table deleted:', deletedId);
+  if (deletedId === id) {
+    toast.warning('This table has been deleted');
+    window.location.href = '/table-management';
+  }
+});
 
-    // Cleanup socket listeners on unmount
-    return () => {
-      socket.off('tableUpdated');
-      socket.off('tableDeleted');
-      window.removeEventListener('refreshTableDetails', handleRefreshTableDetails);
-    };
-  }, [id]);
+// Global event listener for refreshTableDetails
+const handleRefreshTableDetails = (event) => {
+  console.log('Refreshing table details...', event.detail);
+  if (event.detail && event.detail._id === id) {
+    setTable(event.detail);
+  } else {
+    fetchTableDetails();
+  }
+};
+
+window.addEventListener('refreshTableDetails', handleRefreshTableDetails);
+
+// Cleanup socket listeners on unmount
+return () => {
+  socket.off('tableUpdated');
+  socket.off('tableDeleted');
+  window.removeEventListener('refreshTableDetails', handleRefreshTableDetails);
+};
+}, [id]);
 
   if (loading) {
     return (

@@ -62,7 +62,7 @@ const TableAnalytics = ({ isVisible, onClose }) => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 backdrop-blur-lg flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Table Analytics</h2>
@@ -184,45 +184,51 @@ const TableAnalytics = ({ isVisible, onClose }) => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {analytics.capacityBreakdown.map((capacity) => (
-                      <tr key={capacity._id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {capacity._id} seats
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {capacity.count}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {capacity.utilization.toFixed(1)}%
-                        </td>
-                      </tr>
-                    ))}
+                    {analytics.capacityDistribution.map((capacity) => {
+                      const utilization = capacity.available > 0 ?
+                        ((capacity.count - capacity.available) / capacity.count * 100).toFixed(1) : 0;
+                      return (
+                        <tr key={capacity._id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {capacity._id} seats
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {capacity.count}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {utilization}%
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-              <div className="space-y-2">
-                {analytics.recentActivity.slice(0, 10).map((activity, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <div>
+            {/* Utilization Trends */}
+            {analytics.utilizationTrends && analytics.utilizationTrends.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilization Trends</h3>
+                <div className="space-y-2">
+                  {analytics.utilizationTrends.slice(0, 10).map((trend, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">
+                          {new Date(trend.date).toLocaleDateString()}
+                        </span>
+                        <span className="ml-2 text-sm text-gray-500">
+                          {trend.total} tables
+                        </span>
+                      </div>
                       <span className="text-sm font-medium text-gray-900">
-                        {new Date(activity._id.date).toLocaleDateString()}
-                      </span>
-                      <span className="ml-2 text-sm text-gray-500 capitalize">
-                        {activity._id.status}
+                        {trend.utilizationRate}% utilization
                       </span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">
-                      {activity.count} tables
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">
