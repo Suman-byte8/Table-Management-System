@@ -266,6 +266,12 @@ export const tableApi = {
 
     const response = await api.get("/tables/utilization", { params });
     return response.data;
+  },
+
+  // Reset all tables to available status
+  resetAllTables: async () => {
+    const response = await api.put("/tables/reset-all");
+    return response.data;
   }
 };
 

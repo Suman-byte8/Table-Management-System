@@ -226,6 +226,28 @@ const TableManagement = () => {
               </svg>
               Export
             </button>
+
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to reset all tables to available status? This action cannot be undone.')) {
+                  try {
+                    await tableApi.resetAllTables();
+                    toast.success('All tables have been reset to available status.');
+                    // Refresh tables after reset
+                    fetchTables();
+                  } catch (error) {
+                    toast.error('Failed to reset tables.');
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+              title="Reset All Tables"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Reset All Tables
+            </button>
           </div>
         </div>
 

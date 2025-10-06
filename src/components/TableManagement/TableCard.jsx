@@ -240,13 +240,24 @@ const TableCard = ({ table, onTableUpdate, onAssignReservation }) => {
       {/* Action Buttons */}
       <div className="mt-4 space-y-2">
         <div className="flex space-x-2">
-          <button
-            onClick={handleAssignClick}
-            disabled={loading}
-            className="flex-1 bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            Assign
-          </button>
+          {(() => {
+            const isAssignable = table.status === 'available';
+            const btnText = isAssignable ? 'Assign' : 'Assigned';
+            const btnClass = isAssignable
+              ? 'flex-1 bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-blue-700 transition-colors'
+              : 'flex-1 bg-gray-300 text-gray-600 text-sm font-semibold py-2 px-3 rounded-md cursor-not-allowed';
+            return (
+              <button
+                onClick={isAssignable ? handleAssignClick : undefined}
+                disabled={!isAssignable || loading}
+                aria-disabled={!isAssignable}
+                title={isAssignable ? 'Assign a reservation to this table' : 'Table already assigned'}
+                className={`${btnClass} ${loading ? 'opacity-50' : ''}`}
+              >
+                {btnText}
+              </button>
+            );
+          })()}
 
           <div className="relative">
             <button

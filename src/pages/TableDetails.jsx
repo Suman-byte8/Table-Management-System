@@ -52,40 +52,42 @@ const TableDetails = () => {
           return;
         }
 
-        setTable(response.data);
-        // Update currentAssignee and assignmentHistory from response data
-        if (response.data.currentGuest) {
-          setCurrentAssignee({
-            name: response.data.currentGuest,
-            role: "Guest",
-            assignedAt: response.data.lastAssignedAt
-              ? new Date(response.data.lastAssignedAt).toLocaleTimeString()
-              : "N/A",
-            avatar: "/default-avatar.png", // Default avatar
-          });
-        } else {
-          setCurrentAssignee(null);
-        }
+        const t = response.data;
+        setTable(t);
+        // Build history
+        const rawHistory = Array.isArray(t.assignmentHistory) ? t.assignmentHistory : [];
+        const history = rawHistory.map((item) => ({
+          name: item.guestName || (item.assignedBy ? `${item.assignedBy.firstName} ${item.assignedBy.lastName}` : "Unknown"),
+          role: item.assignedBy ? item.assignedBy.role : "Guest",
+          assignedAt: item.assignedAt ? new Date(item.assignedAt).toLocaleString() : "N/A",
+          unassignedAt: item.freedAt ? new Date(item.freedAt).toLocaleString() : "N/A",
+          avatar: "/default-avatar.png",
+        }));
+        setAssignmentHistory(history);
 
-        if (
-          response.data.assignmentHistory &&
-          Array.isArray(response.data.assignmentHistory)
-        ) {
-          const history = response.data.assignmentHistory.map((item) => ({
-            name: item.guestName || item.assignedBy || "Unknown",
-            role: "Guest",
-            assignedAt: item.assignedAt
-              ? new Date(item.assignedAt).toLocaleTimeString()
-              : "N/A",
-            unassignedAt: item.freedAt
-              ? new Date(item.freedAt).toLocaleTimeString()
-              : "N/A",
-            avatar: "/default-avatar.png", // Default avatar
-          }));
-          setAssignmentHistory(history);
+        // Derive currentAssignee: use assignedTo user if present, else currentGuest, else latest history
+        let assignee = null;
+        if (t.assignedTo) {
+          assignee = {
+            name: `${t.assignedTo.firstName} ${t.assignedTo.lastName}`,
+            role: t.assignedTo.role || "User",
+            assignedAt: t.lastAssignedAt ? new Date(t.lastAssignedAt).toLocaleString() : "N/A",
+            avatar: "/default-avatar.png",
+          };
         } else {
-          setAssignmentHistory([]);
+          const latest = rawHistory.length > 0 ? rawHistory[rawHistory.length - 1] : null;
+          const assigneeName = t.currentGuest || latest?.guestName || null;
+          const assignedAt = t.lastAssignedAt || latest?.assignedAt || null;
+          if (assigneeName) {
+            assignee = {
+              name: assigneeName,
+              role: "Guest",
+              assignedAt: assignedAt ? new Date(assignedAt).toLocaleString() : "N/A",
+              avatar: "/default-avatar.png",
+            };
+          }
         }
+        setCurrentAssignee(assignee);
       } catch (error) {
         console.error("❌ Error fetching table details:", error);
         console.error("❌ Error response:", error.response);
@@ -110,6 +112,37 @@ const TableDetails = () => {
       console.log("Table updated:", updatedTable);
       if (updatedTable._id === id) {
         setTable(updatedTable);
+        const sockHistory = Array.isArray(updatedTable.assignmentHistory) ? updatedTable.assignmentHistory : [];
+        setAssignmentHistory(sockHistory.map((item) => ({
+          name: item.guestName || (item.assignedBy ? `${item.assignedBy.firstName} ${item.assignedBy.lastName}` : "Unknown"),
+          role: item.assignedBy ? item.assignedBy.role : "Guest",
+          assignedAt: item.assignedAt ? new Date(item.assignedAt).toLocaleString() : "N/A",
+          unassignedAt: item.freedAt ? new Date(item.freedAt).toLocaleString() : "N/A",
+          avatar: "/default-avatar.png",
+        })));
+        // Derive currentAssignee for socket update
+        let assigneeSock = null;
+        if (updatedTable.assignedTo) {
+          assigneeSock = {
+            name: `${updatedTable.assignedTo.firstName} ${updatedTable.assignedTo.lastName}`,
+            role: updatedTable.assignedTo.role || "User",
+            assignedAt: updatedTable.lastAssignedAt ? new Date(updatedTable.lastAssignedAt).toLocaleString() : "N/A",
+            avatar: "/default-avatar.png",
+          };
+        } else {
+          const latestSock = sockHistory.length > 0 ? sockHistory[sockHistory.length - 1] : null;
+          const assigneeNameSock = updatedTable.currentGuest || latestSock?.guestName || null;
+          const assignedAtSock = updatedTable.lastAssignedAt || latestSock?.assignedAt || null;
+          if (assigneeNameSock) {
+            assigneeSock = {
+              name: assigneeNameSock,
+              role: "Guest",
+              assignedAt: assignedAtSock ? new Date(assignedAtSock).toLocaleString() : "N/A",
+              avatar: "/default-avatar.png",
+            };
+          }
+        }
+        setCurrentAssignee(assigneeSock);
         toast.info("Table updated");
       }
     });

@@ -196,9 +196,18 @@ const ReservationQueue = ({ filters }) => {
       const updatedTableData = {
         status: 'reserved',
         lastAssignedAt: new Date().toISOString(),
-        // currentReservation: selectedReservation.id, // Uncomment if backend schema/logic uses this
+        currentGuest: selectedReservation.guestName,
+        historyEntry: {
+          reservationId: selectedReservation.id,
+          reservationType: 'restaurant',
+          guestName: selectedReservation.guestName,
+          assignedAt: new Date().toISOString(),
+          assignedBy: null
+        }
       };
       const tableUpdateResponse = await tableApi.update(tableId, updatedTableData);
+
+      // Follow-up append no longer needed; done in one atomic update
       console.log("Table updated successfully:", tableUpdateResponse.data);
 
       // --- OPTIMISTICALLY REMOVE FROM QUEUE ---
